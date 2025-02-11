@@ -141,6 +141,25 @@
       0% { opacity: 1; transform: translateY(0px); }
       100% { opacity: 0; transform: translateY(-50px); }
     }
+    /* Royal Herald (Golden Cookie analogue) */
+    .royal-herald {
+      position: fixed;
+      background: gold;
+      color: black;
+      padding: 10px 20px;
+      border: 2px solid darkgoldenrod;
+      border-radius: 8px;
+      font-family: 'MedievalSharp', cursive;
+      font-size: 1.2em;
+      z-index: 3000;
+      cursor: pointer;
+      box-shadow: 2px 2px 6px rgba(0,0,0,0.3);
+      animation: fadeIn 0.5s;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
     /* Quest list */
     #questList li {
       list-style: none;
@@ -150,10 +169,6 @@
       text-decoration: line-through;
       color: green;
       animation: fadeIn 1s;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
     }
     /* Seasonal event */
     #seasonalStatus {
@@ -251,7 +266,7 @@
     <h2>Welcome to Medieval Idle Adventure!</h2>
     <p>
       Tap the treasure chest to gather gold, upgrade your abilities, battle diverse foes, and uncover ancient lore.
-      Use the “Settings” button (top right) to adjust sound, music, difficulty, and challenge mode.
+      Use the “Settings” button (top right) to adjust sound and difficulty.
       Good luck, brave hero!
     </p>
     <button id="dismissTutorial">Got It!</button>
@@ -500,7 +515,7 @@
       function currentGoldMultiplier() { return 1 + prestigeLevel * 0.1 + bonusMultiplier; }
       let highScore = 0;
       let enemyDefeatedCount = 0, specialAttackCount = 0;
-      // Quests now have a lore field. For linear narrative, only the first incomplete quest is active.
+      // Quests with lore for a linear narrative.
       const quests = [
         { id:1, desc: "Gather 100 Gold", lore: "The people of Eldoria hunger for wealth.", condition: () => gold >= 100, reward: () => { hero.xp += 10; } , completed: false },
         { id:2, desc: "Defeat 5 Enemies", lore: "Dark forces stir in the shadows.", condition: () => enemyDefeatedCount >= 5, reward: () => { gold += 20; }, completed: false },
@@ -515,8 +530,11 @@
         { id:2, desc: "Gold Hoarder (1,000 total earned)", condition: () => gold >= 1000, awarded: false },
         { id:3, desc: "Slayer (50 enemies defeated)", condition: () => enemyDefeatedCount >= 50, awarded: false },
         { id:4, desc: "Prestige Master (Prestige Level 5)", condition: () => prestigeLevel >= 5, awarded: false },
-        { id:5, desc: "Quest Conqueror (Complete 5 quests)", condition: () => quests.filter(q => q.completed).length >= 5, awarded: false }
+        { id:5, desc: "Quest Conqueror (Complete 5 quests)", condition: () => quests.filter(q => q.completed).length >= 5, awarded: false },
+        { id:6, desc: "Herald's Blessing (Click a Royal Herald)", condition: () => clickedRoyalHerald, awarded: false }
       ];
+      // Track if Royal Herald was clicked
+      let clickedRoyalHerald = false;
       // Skill tree with sequential unlocking.
       const skills = {
         skill1: { purchased: false, cost: 100, effect: () => { goldPerClick = Math.floor(goldPerClick * 1.5); } },
@@ -531,24 +549,23 @@
       let passiveBoost = 1.0;
       // New resource: relics
       let relics = 0;
-      // Difficulty & Challenge Mode (set in settings)
-      let difficultyMultiplier = 1; // from settings (0.8=Easy, 1=Normal, 1.2=Hard)
-      let challengeMode = false; // if enabled, further increases enemy stats by 20%
-      // Seasonal event: temporary gold bonus multiplier
+      // Settings: difficulty and challenge mode
+      let difficultyMultiplier = 1;
+      let challengeMode = false;
+      // Seasonal event: temporary gold bonus multiplier (e.g., from Kingdom Festival)
       let eventActive = false, eventTimeRemaining = 0, eventInterval = null;
-      let temporaryGoldBonus = 1; // normally 1, can become 2 during event
+      let temporaryGoldBonus = 1;
       // Offline progress
       let lastSaveTime = Date.now();
-      // Leaderboard array
+      // Leaderboard
       let leaderboard = [];
-      // Combo system for attacks
+      // Combo system
       let lastAttackTime = 0, comboMultiplier = 1;
       const healCost = 50, healAmount = 20;
-      // For auto clicker interval (in ms)
+      // Auto clicker interval (in ms)
       let autoClickInterval = 3000;
       // Settings variables
       let musicVolume = 0.3, sfxVolume = 1, muteSound = false;
-      // Define skill order for sequential unlocking:
       const skillOrder = ["skill1", "skill2", "skill3", "skill4", "skill5", "skill6", "skill7", "skill8"];
 
       // -------------------------
@@ -722,17 +739,15 @@
         }
       }
       // -------------------------
-      // RANDOM WORLD EVENTS
+      // RANDOM WORLD EVENTS (Bonus features)
       // -------------------------
       function triggerRandomEvent() {
         let r = Math.random();
         if(r < 0.3) {
-          // Treasure Discovery: temporarily double gold earnings
           temporaryGoldBonus = 2;
           showNotification("Treasure Discovery! Gold earnings doubled for 30s!", 3000);
           setTimeout(() => { temporaryGoldBonus = 1; updateDisplays(); }, 30000);
         } else if(r < 0.6) {
-          // Ancient Relic Found: award 1 relic
           relics++;
           showNotification("Ancient Relic Found! You gained 1 relic.", 3000);
           updateDisplays();
@@ -742,20 +757,78 @@
         if(Math.random() < 0.2) triggerRandomEvent();
       }, 60000);
       // -------------------------
+      // ROYAL HERALD (Golden Cookie analogue)
+      // -------------------------
+      let royalHeraldExists = false;
+      function spawnRoyalHerald() {
+        if (royalHeraldExists) return;
+        royalHeraldExists = true;
+        const herald = document.createElement("div");
+        herald.className = "royal-herald";
+        herald.textContent = "Royal Herald! Click for Fortune!";
+        // Position randomly within the viewport
+        const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+        const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+        herald.style.left = Math.random() * (vw - 200) + "px";
+        herald.style.top = Math.random() * (vh - 50) + "px";
+        document.body.appendChild(herald);
+        herald.addEventListener("click", function() {
+          clickedRoyalHerald = true;
+          // Choose a random bonus:
+          let bonusType = Math.random();
+          if (bonusType < 0.33) {
+            let bonusGold = 500;
+            gold += bonusGold;
+            showNotification("Royal Herald grants you " + bonusGold + " bonus gold!");
+          } else if (bonusType < 0.66) {
+            let bonusXP = 50;
+            hero.xp += bonusXP;
+            showNotification("Royal Herald bestows " + bonusXP + " bonus XP!");
+          } else {
+            temporaryGoldBonus = 2;
+            showNotification("Royal Herald’s Decree! Gold earnings doubled for 30s!");
+            setTimeout(() => { temporaryGoldBonus = 1; updateDisplays(); }, 30000);
+          }
+          herald.remove();
+          royalHeraldExists = false;
+          updateDisplays();
+        });
+        // Remove herald after 10 seconds if not clicked
+        setTimeout(() => {
+          if(document.body.contains(herald)) {
+            herald.remove();
+            royalHeraldExists = false;
+          }
+        }, 10000);
+      }
+      // Randomly spawn a Royal Herald between 30 and 90 seconds
+      setInterval(() => {
+        if(Math.random() < 0.3) spawnRoyalHerald();
+      }, 30000);
+      // -------------------------
       // QUEST FUNCTIONS
       // -------------------------
-      // For linear narrative, display only the first incomplete quest as active.
       function updateQuestDisplay() {
         questListElem.innerHTML = "";
         let activeQuest = null;
-        let completedQuests = [];
         // Sort quests by id
         quests.sort((a,b) => a.id - b.id);
         quests.forEach(q => {
           if(q.completed) {
-            completedQuests.push(q);
+            const li = document.createElement("li");
+            li.textContent = q.desc + " (Completed)";
+            li.classList.add("completed");
+            questListElem.appendChild(li);
           } else if(!activeQuest) {
             activeQuest = q;
+            const li = document.createElement("li");
+            li.textContent = q.desc;
+            questListElem.appendChild(li);
+          } else {
+            const li = document.createElement("li");
+            li.textContent = q.desc;
+            li.style.opacity = "0.5";
+            questListElem.appendChild(li);
           }
         });
         if(activeQuest) {
@@ -764,7 +837,6 @@
           activeQuestText.textContent = "All quests completed!";
         }
       }
-      // When a quest is completed, append its lore to the dynamic lore area.
       function appendLore(text) {
         const p = document.createElement("p");
         p.textContent = text;
@@ -802,20 +874,15 @@
       // -------------------------
       // SKILL TREE FUNCTIONS (Sequential Unlocking)
       // -------------------------
-      // Update the display of the skill tree: show only the first unpurchased skill and all purchased ones.
       function updateSkillTree() {
         const lis = document.querySelectorAll("#skillList li");
-        // Use the defined order
         for (let i = 0; i < skillOrder.length; i++) {
           const skillId = skillOrder[i];
-          // Find the list item corresponding to this skill id
           const li = Array.from(lis).find(item => item.getAttribute("data-id") === skillId);
           if(li) {
             if(i === 0) {
-              // Always show the first skill
               li.style.display = "list-item";
             } else {
-              // For subsequent skills, show only if the previous skill in the order is purchased
               const prevSkillId = skillOrder[i-1];
               if(skills[prevSkillId] && skills[prevSkillId].purchased) {
                 li.style.display = "list-item";
@@ -826,6 +893,26 @@
           }
         }
       }
+      document.querySelectorAll(".buySkillBtn").forEach(btn => {
+        btn.addEventListener("click", function(e) {
+          const li = e.target.parentElement;
+          const skillId = li.getAttribute("data-id");
+          if(skills[skillId].purchased) {
+            showNotification("Skill already purchased!");
+            return;
+          }
+          if(gold >= skills[skillId].cost) {
+            gold -= skills[skillId].cost;
+            skills[skillId].purchased = true;
+            skills[skillId].effect();
+            li.style.textDecoration = "line-through";
+            showNotification("Skill purchased: " + li.textContent, 2000);
+            updateDisplays();
+          } else {
+            showNotification("Not enough gold for this skill!");
+          }
+        });
+      });
       // -------------------------
       // SETTINGS & TUTORIAL FUNCTIONS
       // -------------------------
@@ -1028,7 +1115,6 @@
       // -------------------------
       function gameLoop() {
         updateSpecialCooldownBar();
-        // For Regenerator enemies, heal a bit per frame (approximate 60fps)
         if(enemy.type === "Regenerator" && enemy.currentHP > 0) {
           enemy.currentHP = Math.min(enemy.currentHP + enemy.regen * 0.016, enemy.maxHP);
           updateDisplays();
@@ -1257,7 +1343,6 @@
       // -------------------------
       function updateSkillTree() {
         const lis = document.querySelectorAll("#skillList li");
-        // For each skill in our defined order:
         for (let i = 0; i < skillOrder.length; i++) {
           const skillId = skillOrder[i];
           const li = Array.from(lis).find(item => item.getAttribute("data-id") === skillId);
@@ -1343,6 +1428,8 @@
         localStorage.setItem("tutorialSeen", "true");
         backgroundMusic.play().catch(err => console.log("Music play error:", err));
       });
+      // -------------------------
+      // END OF EVENT LISTENERS
     })();
   </script>
 </body>
