@@ -142,6 +142,10 @@
       100% { opacity: 0; transform: translateY(-50px); }
     }
     /* Quest list */
+    #questList li {
+      list-style: none;
+      margin: 5px 0;
+    }
     #questList li.completed {
       text-decoration: line-through;
       color: green;
@@ -402,13 +406,13 @@
       <!-- Quest Section -->
       <div class="section" id="questSection">
         <h2>Quests & Lore</h2>
-        <p>Complete quests to earn rewards and uncover the kingdom’s secrets!</p>
+        <p id="activeQuestText"></p>
         <ul id="questList"></ul>
       </div>
       <!-- Skill Tree Section -->
       <div class="section" id="skillTreeSection">
         <h2>Skill Tree</h2>
-        <p>Invest in your abilities:</p>
+        <p>Invest in your abilities (each next skill unlocks only after purchasing the previous one):</p>
         <ul id="skillList">
           <li data-id="skill1">
             Enhanced Gold Click (Increase click gold by 50%) – Cost: 100 Gold 
@@ -466,11 +470,10 @@
       <!-- Lore Section -->
       <div class="section" id="loreSection">
         <h2>Lore & World-Building</h2>
-        <p>
-          Long ago in the Kingdom of Eldoria, mighty heroes and dastardly foes clashed for treasure and honor.
-          As you gather gold, defeat formidable enemies, and complete epic quests, ancient secrets and relics are revealed.
-          The fate of the realm hangs in the balance...
-        </p>
+        <div id="staticLore">
+          <p>Long ago in the Kingdom of Eldoria, mighty heroes and dastardly foes clashed for treasure and honor.</p>
+        </div>
+        <div id="dynamicLore"></div>
       </div>
     </div>
   </div>
@@ -497,23 +500,24 @@
       function currentGoldMultiplier() { return 1 + prestigeLevel * 0.1 + bonusMultiplier; }
       let highScore = 0;
       let enemyDefeatedCount = 0, specialAttackCount = 0;
+      // Quests now have a lore field. For linear narrative, only the first incomplete quest is active.
       const quests = [
-        { id:1, desc: "Gather 100 Gold", condition: () => gold >= 100, reward: () => { hero.xp += 10; } , completed: false },
-        { id:2, desc: "Defeat 5 Enemies", condition: () => enemyDefeatedCount >= 5, reward: () => { gold += 20; }, completed: false },
-        { id:3, desc: "Purchase 3 Gold Mines", condition: () => goldMineOwned >= 3, reward: () => { hero.attack += 1; }, completed: false },
-        { id:4, desc: "Reach Level 5", condition: () => hero.level >= 5, reward: () => { gold += 50; }, completed: false },
-        { id:5, desc: "Use Special Attack 3 times", condition: () => specialAttackCount >= 3, reward: () => { hero.xp += 20; }, completed: false },
-        { id:6, desc: "Unlock a new enemy type", condition: () => enemy.type !== "Normal", reward: () => { gold += 30; }, completed: false },
-        { id:7, desc: "Complete 10 quests", condition: () => quests.filter(q=>q.completed).length >= 10, reward: () => { gold += 100; }, completed: false }
+        { id:1, desc: "Gather 100 Gold", lore: "The people of Eldoria hunger for wealth.", condition: () => gold >= 100, reward: () => { hero.xp += 10; } , completed: false },
+        { id:2, desc: "Defeat 5 Enemies", lore: "Dark forces stir in the shadows.", condition: () => enemyDefeatedCount >= 5, reward: () => { gold += 20; }, completed: false },
+        { id:3, desc: "Purchase 3 Gold Mines", lore: "Secure the wealth of the kingdom by expanding your mines.", condition: () => goldMineOwned >= 3, reward: () => { hero.attack += 1; }, completed: false },
+        { id:4, desc: "Reach Level 5", lore: "Prove your valor on the battlefield.", condition: () => hero.level >= 5, reward: () => { gold += 50; }, completed: false },
+        { id:5, desc: "Use Special Attack 3 times", lore: "Master the art of devastating blows.", condition: () => specialAttackCount >= 3, reward: () => { hero.xp += 20; }, completed: false },
+        { id:6, desc: "Unlock a new enemy type", lore: "New foes arise as challenges intensify.", condition: () => enemy.type !== "Normal", reward: () => { gold += 30; }, completed: false },
+        { id:7, desc: "Complete 5 quests", lore: "Your legend grows with each epic feat.", condition: () => quests.filter(q => q.completed).length >= 5, reward: () => { gold += 100; }, completed: false }
       ];
       const achievements = [
         { id:1, desc: "First Click", condition: () => gold > 0, awarded: false },
         { id:2, desc: "Gold Hoarder (1,000 total earned)", condition: () => gold >= 1000, awarded: false },
         { id:3, desc: "Slayer (50 enemies defeated)", condition: () => enemyDefeatedCount >= 50, awarded: false },
         { id:4, desc: "Prestige Master (Prestige Level 5)", condition: () => prestigeLevel >= 5, awarded: false },
-        { id:5, desc: "Quest Conqueror (Complete 7 quests)", condition: () => quests.filter(q => q.completed).length >= 7, awarded: false }
+        { id:5, desc: "Quest Conqueror (Complete 5 quests)", condition: () => quests.filter(q => q.completed).length >= 5, awarded: false }
       ];
-      // Skill tree (adding skills 7 and 8)
+      // Skill tree with sequential unlocking.
       const skills = {
         skill1: { purchased: false, cost: 100, effect: () => { goldPerClick = Math.floor(goldPerClick * 1.5); } },
         skill2: { purchased: false, cost: 150, effect: () => { hero.attack += 2; } },
@@ -521,13 +525,13 @@
         skill4: { purchased: false, cost: 250, effect: () => { autoClickInterval = Math.max(1000, autoClickInterval - 500); } },
         skill5: { purchased: false, cost: 300, effect: () => { hero.maxHealth += 50; hero.health += 50; } },
         skill6: { purchased: false, cost: 350, effect: () => { critChance += 0.02; } },
-        skill7: { purchased: false, cost: 400, effect: () => { /* Defensive Mastery: reduce damage taken by 10% */ hero.damageReduction = (hero.damageReduction || 0) + 0.10; } },
+        skill7: { purchased: false, cost: 400, effect: () => { hero.damageReduction = (hero.damageReduction || 0) + 0.10; } },
         skill8: { purchased: false, cost: 450, effect: () => { passiveBoost = 1.3; } }
       };
       let passiveBoost = 1.0;
       // New resource: relics
       let relics = 0;
-      // Difficulty & Challenge Mode
+      // Difficulty & Challenge Mode (set in settings)
       let difficultyMultiplier = 1; // from settings (0.8=Easy, 1=Normal, 1.2=Hard)
       let challengeMode = false; // if enabled, further increases enemy stats by 20%
       // Seasonal event: temporary gold bonus multiplier
@@ -544,6 +548,8 @@
       let autoClickInterval = 3000;
       // Settings variables
       let musicVolume = 0.3, sfxVolume = 1, muteSound = false;
+      // Define skill order for sequential unlocking:
+      const skillOrder = ["skill1", "skill2", "skill3", "skill4", "skill5", "skill6", "skill7", "skill8"];
 
       // -------------------------
       // DOM ELEMENTS
@@ -603,8 +609,10 @@
             headerPrestigeLevel = document.getElementById("headerPrestigeLevel"),
             headerPrestigeMultiplier = document.getElementById("headerPrestigeMultiplier"),
             headerHighScore = document.getElementById("headerHighScore");
-      // Quests
-      const questListElem = document.getElementById("questList");
+      // Quests & Lore
+      const questListElem = document.getElementById("questList"),
+            activeQuestText = document.getElementById("activeQuestText"),
+            dynamicLoreContainer = document.getElementById("dynamicLore");
       // Skill Tree
       const skillListElem = document.getElementById("skillList");
       // Achievements
@@ -635,6 +643,7 @@
             levelUpSound = document.getElementById("levelUpSound"),
             enemyDefeatedSound = document.getElementById("enemyDefeatedSound"),
             upgradeSound = document.getElementById("upgradeSound");
+
       // -------------------------
       // UTILITY FUNCTIONS
       // -------------------------
@@ -684,6 +693,7 @@
         headerHighScore.textContent = highScore;
         document.getElementById("headerRelics").textContent = relics;
         updateQuestDisplay();
+        updateSkillTree();
         updateAchievementDisplay();
         updateLeaderboard();
       }
@@ -728,21 +738,37 @@
           updateDisplays();
         }
       }
-      // Trigger random event every 60 seconds with 20% chance
       setInterval(() => {
         if(Math.random() < 0.2) triggerRandomEvent();
       }, 60000);
       // -------------------------
       // QUEST FUNCTIONS
       // -------------------------
+      // For linear narrative, display only the first incomplete quest as active.
       function updateQuestDisplay() {
         questListElem.innerHTML = "";
+        let activeQuest = null;
+        let completedQuests = [];
+        // Sort quests by id
+        quests.sort((a,b) => a.id - b.id);
         quests.forEach(q => {
-          const li = document.createElement("li");
-          li.textContent = q.desc;
-          if(q.completed) li.classList.add("completed");
-          questListElem.appendChild(li);
+          if(q.completed) {
+            completedQuests.push(q);
+          } else if(!activeQuest) {
+            activeQuest = q;
+          }
         });
+        if(activeQuest) {
+          activeQuestText.textContent = "Current Quest: " + activeQuest.desc;
+        } else {
+          activeQuestText.textContent = "All quests completed!";
+        }
+      }
+      // When a quest is completed, append its lore to the dynamic lore area.
+      function appendLore(text) {
+        const p = document.createElement("p");
+        p.textContent = text;
+        dynamicLoreContainer.appendChild(p);
       }
       function checkQuests() {
         quests.forEach(q => {
@@ -750,6 +776,7 @@
             q.completed = true;
             q.reward();
             showNotification("Quest completed: " + q.desc, 2500);
+            appendLore(q.lore);
           }
         });
       }
@@ -773,28 +800,32 @@
         });
       }
       // -------------------------
-      // SKILL TREE FUNCTIONS
+      // SKILL TREE FUNCTIONS (Sequential Unlocking)
       // -------------------------
-      document.querySelectorAll(".buySkillBtn").forEach(btn => {
-        btn.addEventListener("click", function(e) {
-          const li = e.target.parentElement;
-          const skillId = li.getAttribute("data-id");
-          if(skills[skillId].purchased) {
-            showNotification("Skill already purchased!");
-            return;
+      // Update the display of the skill tree: show only the first unpurchased skill and all purchased ones.
+      function updateSkillTree() {
+        const lis = document.querySelectorAll("#skillList li");
+        // Use the defined order
+        for (let i = 0; i < skillOrder.length; i++) {
+          const skillId = skillOrder[i];
+          // Find the list item corresponding to this skill id
+          const li = Array.from(lis).find(item => item.getAttribute("data-id") === skillId);
+          if(li) {
+            if(i === 0) {
+              // Always show the first skill
+              li.style.display = "list-item";
+            } else {
+              // For subsequent skills, show only if the previous skill in the order is purchased
+              const prevSkillId = skillOrder[i-1];
+              if(skills[prevSkillId] && skills[prevSkillId].purchased) {
+                li.style.display = "list-item";
+              } else {
+                li.style.display = "none";
+              }
+            }
           }
-          if(gold >= skills[skillId].cost) {
-            gold -= skills[skillId].cost;
-            skills[skillId].purchased = true;
-            skills[skillId].effect();
-            li.style.textDecoration = "line-through";
-            showNotification("Skill purchased: " + li.textContent, 2000);
-            updateDisplays();
-          } else {
-            showNotification("Not enough gold for this skill!");
-          }
-        });
-      });
+        }
+      }
       // -------------------------
       // SETTINGS & TUTORIAL FUNCTIONS
       // -------------------------
@@ -807,7 +838,6 @@
         challengeModeToggle.checked = challengeMode;
       });
       closeSettings.addEventListener("click", function() {
-        // Update difficulty and challenge mode from settings
         difficultyMultiplier = parseFloat(difficultySelect.value);
         challengeMode = challengeModeToggle.checked;
         settingsModal.style.display = "none";
@@ -884,7 +914,7 @@
           enemy.rewardXP = Math.floor((10 + enemy.level * 3) * 1.1);
           enemy.dodgeChance = 0;
           enemy.counterDamage = enemy.level * 2;
-          enemy.regen = Math.floor(enemy.maxHP * 0.02); // Regenerate 2% per second
+          enemy.regen = Math.floor(enemy.maxHP * 0.02);
           documentHeaderEnemyType.textContent = "(Regenerator)";
         } else {
           enemy.type = "Normal";
@@ -998,9 +1028,9 @@
       // -------------------------
       function gameLoop() {
         updateSpecialCooldownBar();
-        // If enemy is a Regenerator, heal a bit per second
+        // For Regenerator enemies, heal a bit per frame (approximate 60fps)
         if(enemy.type === "Regenerator" && enemy.currentHP > 0) {
-          enemy.currentHP = Math.min(enemy.currentHP + enemy.regen * 0.016, enemy.maxHP); // approximate per frame at 60fps
+          enemy.currentHP = Math.min(enemy.currentHP + enemy.regen * 0.016, enemy.maxHP);
           updateDisplays();
         }
         requestAnimationFrame(gameLoop);
@@ -1070,7 +1100,6 @@
           updateDisplays();
         } else { showNotification("Not enough gold to hire Blacksmith!"); }
       });
-      // Adventurer's Guild upgrade
       document.getElementById("buyGuild").addEventListener("click", function() {
         if(gold >= guildCost) {
           gold -= guildCost;
@@ -1081,7 +1110,6 @@
           updateDisplays();
         } else { showNotification("Not enough gold for Adventurer's Guild!"); }
       });
-      // Mage Tower upgrade
       document.getElementById("buyMageTower").addEventListener("click", function() {
         if(gold >= mageTowerCost) {
           gold -= mageTowerCost;
@@ -1093,7 +1121,6 @@
           updateDisplays();
         } else { showNotification("Not enough gold for Mage Tower!"); }
       });
-      // Heal button
       healButton.addEventListener("click", function() {
         if(gold >= healCost) {
           gold -= healCost;
@@ -1102,12 +1129,10 @@
           updateDisplays();
         } else { showNotification("Not enough gold to heal!"); }
       });
-      // Passive income (every second)
       setInterval(function() {
         gold += goldMineOwned * currentGoldMultiplier() * getPassiveIncomeMultiplier() * temporaryGoldBonus;
         updateDisplays();
       }, 1000);
-      // Battle: normal attack with combo and enemy counterattack
       attackButton.addEventListener("click", function() {
         if(enemy.currentHP > 0) {
           const currentTime = Date.now();
@@ -1126,7 +1151,6 @@
               showNotification("Combo x" + comboMultiplier.toFixed(1) + " for " + Math.floor(damage) + " damage!");
             }
           }
-          // Enemy counterattack (20% chance)
           if(enemy.currentHP > 0 && Math.random() < 0.2) {
             let counterDmg = enemy.counterDamage;
             hero.health -= counterDmg;
@@ -1142,7 +1166,6 @@
           if(enemy.currentHP <= 0) {
             if(!muteSound) enemyDefeatedSound.play();
             enemyDefeatedCount++;
-            // If enemy is Boss, award an extra relic
             if(enemy.type === "Boss") relics++;
             gold += enemy.rewardGold * currentGoldMultiplier() * temporaryGoldBonus;
             hero.xp += enemy.rewardXP;
@@ -1155,7 +1178,6 @@
           checkAchievements();
         } else { showNotification("Spawn an enemy first!"); }
       });
-      // Special attack
       specialAttackButton.addEventListener("click", function() {
         if(!specialAvailable) { showNotification("Special Attack is on cooldown!"); return; }
         if(enemy.type === "Agile" && Math.random() < enemy.dodgeChance/2) {
@@ -1179,7 +1201,6 @@
         specialAttackButton.disabled = true;
         specialCooldownRemaining = specialCooldownTime;
       });
-      // Special attack cooldown timer
       setInterval(function(){
         if(!specialAvailable && specialCooldownRemaining > 0) {
           specialCooldownRemaining--;
@@ -1190,7 +1211,6 @@
         }
       }, 1000);
       spawnEnemyButton.addEventListener("click", spawnEnemy);
-      // Prestige Reset
       prestigeButton.addEventListener("click", function() {
         if(hero.level < 10) { showNotification("You need to be at least Level 10 to Prestige!"); return; }
         prestigeLevel++;
@@ -1211,7 +1231,6 @@
         attackButton.disabled = false;
         specialAttackButton.disabled = false;
       });
-      // Prestige upgrade: Divine Blessing
       buyPrestigeUpgradeButton.addEventListener("click", function() {
         if(prestigePoints > 0) {
           prestigePoints--;
@@ -1223,9 +1242,7 @@
           showNotification("Not enough Prestige Points!");
         }
       });
-      // Check quests and achievements every 2 seconds
       setInterval(() => { checkQuests(); checkAchievements(); }, 2000);
-      // Leaderboard update
       function updateLeaderboard() {
         leaderboardListElem.innerHTML = "";
         let sorted = leaderboard.sort((a,b) => b.score - a.score).slice(0, 5);
@@ -1235,6 +1252,97 @@
           leaderboardListElem.appendChild(li);
         });
       }
+      // -------------------------
+      // SKILL TREE UPDATE (Sequential Unlocking)
+      // -------------------------
+      function updateSkillTree() {
+        const lis = document.querySelectorAll("#skillList li");
+        // For each skill in our defined order:
+        for (let i = 0; i < skillOrder.length; i++) {
+          const skillId = skillOrder[i];
+          const li = Array.from(lis).find(item => item.getAttribute("data-id") === skillId);
+          if(li) {
+            if(i === 0) {
+              li.style.display = "list-item";
+            } else {
+              const prevSkillId = skillOrder[i-1];
+              if(skills[prevSkillId] && skills[prevSkillId].purchased) {
+                li.style.display = "list-item";
+              } else {
+                li.style.display = "none";
+              }
+            }
+          }
+        }
+      }
+      document.querySelectorAll(".buySkillBtn").forEach(btn => {
+        btn.addEventListener("click", function(e) {
+          const li = e.target.parentElement;
+          const skillId = li.getAttribute("data-id");
+          if(skills[skillId].purchased) {
+            showNotification("Skill already purchased!");
+            return;
+          }
+          if(gold >= skills[skillId].cost) {
+            gold -= skills[skillId].cost;
+            skills[skillId].purchased = true;
+            skills[skillId].effect();
+            li.style.textDecoration = "line-through";
+            showNotification("Skill purchased: " + li.textContent, 2000);
+            updateDisplays();
+          } else {
+            showNotification("Not enough gold for this skill!");
+          }
+        });
+      });
+      // -------------------------
+      // SETTINGS & TUTORIAL FUNCTIONS
+      // -------------------------
+      settingsButton.addEventListener("click", function() {
+        settingsModal.style.display = "block";
+        musicVolumeSlider.value = musicVolume;
+        sfxVolumeSlider.value = sfxVolume;
+        muteToggle.checked = muteSound;
+        difficultySelect.value = difficultyMultiplier;
+        challengeModeToggle.checked = challengeMode;
+      });
+      closeSettings.addEventListener("click", function() {
+        difficultyMultiplier = parseFloat(difficultySelect.value);
+        challengeMode = challengeModeToggle.checked;
+        settingsModal.style.display = "none";
+        showNotification("Settings updated.");
+      });
+      musicVolumeSlider.addEventListener("input", function() {
+        musicVolume = parseFloat(this.value);
+        backgroundMusic.volume = musicVolume;
+      });
+      sfxVolumeSlider.addEventListener("input", function() {
+        sfxVolume = parseFloat(this.value);
+      });
+      muteToggle.addEventListener("change", function() {
+        muteSound = this.checked;
+        if(muteSound) {
+          backgroundMusic.pause();
+        } else {
+          backgroundMusic.play();
+        }
+      });
+      shareScoreButton.addEventListener("click", function() {
+        if(navigator.share) {
+          navigator.share({
+            title: "Medieval Idle Adventure",
+            text: "My high score is " + highScore + " gold and " + relics + " relics!",
+          }).then(() => console.log("Score shared!"))
+            .catch(err => console.error("Error sharing:", err));
+        } else {
+          showNotification("Sharing not supported on this browser.");
+        }
+      });
+      dismissTutorial.addEventListener("click", function() {
+        tutorialOverlay.style.display = "none";
+        localStorage.setItem("tutorialSeen", "true");
+        backgroundMusic.play().catch(err => console.log("Music play error:", err));
+      });
     })();
   </script>
 </body>
