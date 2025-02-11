@@ -489,16 +489,47 @@
         <h2>Skill Tree</h2>
         <p>Invest in your abilities (each next skill unlocks only after purchasing the previous one):</p>
         <ul id="skillList">
-          <!-- The skill list will be generated dynamically -->
+          <!-- Base skills already defined below -->
+          <li data-id="skill1">
+            Enhanced Gold Click (Increase click gold by 50%) – Cost: 100 Gold 
+            <button class="buySkillBtn" title="Boost click income">Buy</button>
+          </li>
+          <li data-id="skill2">
+            Stronger Hero (Increase hero attack by 2) – Cost: 150 Gold 
+            <button class="buySkillBtn" title="Boost hero attack">Buy</button>
+          </li>
+          <li data-id="skill3">
+            Resource Boost (Increase passive income by 20%) – Cost: 200 Gold 
+            <button class="buySkillBtn" title="Boost passive income">Buy</button>
+          </li>
+          <li data-id="skill4">
+            Faster Auto Click (Decrease auto clicker interval by 0.5s) – Cost: 250 Gold 
+            <button class="buySkillBtn" title="Faster auto click">Buy</button>
+          </li>
+          <li data-id="skill5">
+            Stronger Defense (Increase hero max health by 50) – Cost: 300 Gold 
+            <button class="buySkillBtn" title="Increase defense">Buy</button>
+          </li>
+          <li data-id="skill6">
+            Critical Mastery (Increase critical chance by 2%) – Cost: 350 Gold 
+            <button class="buySkillBtn" title="Boost crit chance">Buy</button>
+          </li>
+          <li data-id="skill7">
+            Defensive Mastery (Reduce damage taken by 10%) – Cost: 400 Gold 
+            <button class="buySkillBtn" title="Boost defense">Buy</button>
+          </li>
+          <li data-id="skill8">
+            Advanced Resource Management (Increase passive income by 30%) – Cost: 450 Gold 
+            <button class="buySkillBtn" title="Boost passive income further">Buy</button>
+          </li>
+          <!-- The extra 92 skills will be appended dynamically below -->
         </ul>
       </div>
       <!-- Achievement Section -->
       <div class="section" id="achievementSection">
         <h2>Achievements</h2>
         <p>Track your milestones:</p>
-        <ul id="achievementList">
-          <!-- Achievements will be generated dynamically -->
-        </ul>
+        <ul id="achievementList"></ul>
       </div>
       <!-- Seasonal Event Section -->
       <div class="section" id="seasonalSection">
@@ -571,8 +602,8 @@
       let enemyDefeatedCount = 0, specialAttackCount = 0;
       // Daily Challenge
       let dailyChallenge = null;
-      // Base Achievements
-      const achievementsBase = [
+      // Achievements (base ones)
+      const achievements = [
         { id:1, desc: "First Click", condition: () => gold > 0, awarded: false },
         { id:2, desc: "Gold Hoarder (1,000 total earned)", condition: () => gold >= 1000, awarded: false },
         { id:3, desc: "Slayer (50 enemies defeated)", condition: () => enemyDefeatedCount >= 50, awarded: false },
@@ -580,27 +611,15 @@
         { id:5, desc: "Quest Conqueror (Complete 5 quests)", condition: () => quests.filter(q => q.completed).length >= 5, awarded: false },
         { id:6, desc: "Herald's Blessing (Click a Royal Herald)", condition: () => clickedRoyalHerald, awarded: false }
       ];
-      let achievements = achievementsBase.slice();
-      function generateMedievalAchievementNames() {
-        const adjectives = ["Brave", "Gallant", "Mighty", "Steadfast", "Fierce", "Honorable", "Valorous", "Chivalrous", "Glorious", "Epic"];
-        const nouns = ["Victory", "Feat", "Triumph", "Conquest", "Glory", "Honor", "Legend", "Saga", "Tale", "Myth"];
-        let names = [];
-        for (let i = 0; i < 92; i++) {
-          let adj = adjectives[i % adjectives.length];
-          let noun = nouns[Math.floor(i / adjectives.length) % nouns.length];
-          names.push(adj + " " + noun + " " + (i + 1));
-        }
-        return names;
-      }
-      const extraAchievementNames = generateMedievalAchievementNames();
-      extraAchievementNames.forEach((name, index) => {
+      // Generate 92 extra achievements with generic conditions (e.g. based on total gold earned)
+      for (let i = 1; i <= 92; i++) {
         achievements.push({
           id: achievements.length + 1,
-          desc: name,
-          condition: () => totalGoldEarned >= 1000 * (index + 1),
+          desc: "Extra Achievement " + i,
+          condition: () => totalGoldEarned >= 1000 * i,
           awarded: false
         });
-      });
+      }
       // Quests with lore for a linear narrative.
       const quests = [
         { id:1, desc: "Gather 100 Gold", lore: "The people of Eldoria hunger for wealth.", condition: () => gold >= 100, reward: () => { hero.xp += 10; } , completed: false },
@@ -613,25 +632,20 @@
       ];
       // Statistics
       let totalGoldEarned = 0, totalClicks = 0, totalBattlesWon = 0, highestCombo = 1;
-      function addToStatistics(goldAmount, clicks = 0, battles = 0, combo = 1) {
-        totalGoldEarned += goldAmount;
-        totalClicks += clicks;
-        totalBattlesWon += battles;
-        if(combo > highestCombo) highestCombo = combo;
-      }
       // Event Log
       let eventLog = [];
       function logEvent(message) {
         eventLog.push(message);
-        if(eventLog.length > 10) { eventLog.shift(); }
+        if (eventLog.length > 10) { eventLog.shift(); }
         updateEventLog();
       }
       function updateEventLog() {
-        eventLogDiv.innerHTML = "";
+        const logDiv = document.getElementById("eventLog");
+        logDiv.innerHTML = "";
         eventLog.forEach(msg => {
           const p = document.createElement("p");
           p.textContent = msg;
-          eventLogDiv.appendChild(p);
+          logDiv.appendChild(p);
         });
       }
       // Mini‑Game variables
@@ -640,140 +654,50 @@
       let clickedRoyalHerald = false;
       // Auto clicker interval (in ms)
       let autoClickInterval = 3000;
+      // Settings variables
+      let musicVolume = 0.3, sfxVolume = 1, muteSound = false;
+      let difficultyMultiplier = 1, challengeMode = false;
       // Reincarnation
       let reincarnations = 0, reincarnationBonus = 0;
+      // Base Skill Tree (8 skills)
+      const skills = {
+        skill1: { purchased: false, cost: 100, effect: () => { goldPerClick = Math.floor(goldPerClick * 1.5); } },
+        skill2: { purchased: false, cost: 150, effect: () => { hero.attack += 2; } },
+        skill3: { purchased: false, cost: 200, effect: () => { passiveBoost = 1.2; } },
+        skill4: { purchased: false, cost: 250, effect: () => { autoClickInterval = Math.max(1000, autoClickInterval - 500); } },
+        skill5: { purchased: false, cost: 300, effect: () => { hero.maxHealth += 50; hero.health += 50; } },
+        skill6: { purchased: false, cost: 350, effect: () => { critChance += 0.02; } },
+        skill7: { purchased: false, cost: 400, effect: () => { hero.damageReduction = (hero.damageReduction || 0) + 0.10; } },
+        skill8: { purchased: false, cost: 450, effect: () => { passiveBoost = 1.3; } }
+      };
+      const baseSkillOrder = ["skill1", "skill2", "skill3", "skill4", "skill5", "skill6", "skill7", "skill8"];
+      // Generate 92 extra skills
+      for (let i = 1; i <= 92; i++) {
+        let skillId = "extraSkill" + i;
+        skills[skillId] = {
+          purchased: false,
+          cost: 500 + (i * 50),
+          effect: function() {
+            // Each extra skill increases gold per click by 1 and adds 0.01 to passive boost
+            goldPerClick += 1;
+            passiveBoost += 0.01;
+          }
+        };
+        baseSkillOrder.push(skillId);
+      }
+      let passiveBoost = 1.0;
       // -------------------------
-      // DOM ELEMENTS
+      // DOM ELEMENTS (retrieved earlier)
       // -------------------------
-      // Clicker
-      const goldDisplay = document.getElementById("goldDisplay"),
-            goldPerClickDisplay = document.getElementById("goldPerClickDisplay"),
-            clickButton = document.getElementById("clickButton"),
-            critChanceDisplay = document.getElementById("critChanceDisplay"),
-            critMultiplierDisplay = document.getElementById("critMultiplierDisplay"),
-            critUpgradeCostDisplay = document.getElementById("critUpgradeCostDisplay"),
-            upgradeCritButton = document.getElementById("upgradeCrit");
-      // Resource
-      const buyGoldMineButton = document.getElementById("buyGoldMine"),
-            goldMineCostDisplay = document.getElementById("goldMineCost"),
-            goldMineOwnedDisplay = document.getElementById("goldMineOwned"),
-            upgradeClickButton = document.getElementById("upgradeClick"),
-            clickUpgradeCostDisplay = document.getElementById("clickUpgradeCost"),
-            buyAutoClickerButton = document.getElementById("buyAutoClicker"),
-            autoClickerCostDisplay = document.getElementById("autoClickerCost"),
-            autoClickerOwnedDisplay = document.getElementById("autoClickerOwned"),
-            hireBlacksmithButton = document.getElementById("hireBlacksmith"),
-            blacksmithCostDisplay = document.getElementById("blacksmithCost"),
-            blacksmithLevelDisplay = document.getElementById("blacksmithLevel");
-      // New upgrade elements:
-      const guildCostDisplay = document.getElementById("guildCost"),
-            guildLevelDisplay = document.getElementById("guildLevel"),
-            mageTowerCostDisplay = document.getElementById("mageTowerCost"),
-            mageTowerLevelDisplay = document.getElementById("mageTowerLevel");
-      // New Building displays:
-      const barracksOwnedDisplay = document.getElementById("barracksOwned"),
-            marketplaceOwnedDisplay = document.getElementById("marketplaceOwned"),
-            castleOwnedDisplay = document.getElementById("castleOwned");
-      // RPG / Battle
-      const heroLevelDisplay = document.getElementById("heroLevel"),
-            heroXPDisplay = document.getElementById("heroXP"),
-            heroXPNeededDisplay = document.getElementById("heroXPNeeded"),
-            heroAttackDisplay = document.getElementById("heroAttack"),
-            xpBar = document.getElementById("xpBar"),
-            enemyHPDisplay = document.getElementById("enemyHP"),
-            enemyRewardDisplay = document.getElementById("enemyReward"),
-            enemyXPRewardDisplay = document.getElementById("enemyXPReward"),
-            enemyHealthBar = document.getElementById("enemyHealthBar"),
-            attackButton = document.getElementById("attackButton"),
-            specialAttackButton = document.getElementById("specialAttackButton"),
-            specialCooldownDisplay = document.getElementById("specialCooldownDisplay"),
-            spawnEnemyButton = document.getElementById("spawnEnemyButton"),
-            documentHeaderEnemyType = document.getElementById("enemyTypeLabel"),
-            specialCooldownBar = document.getElementById("specialCooldownBar");
-      // Hero Health & Heal Button
-      const heroHealthDisplay = document.getElementById("heroHealth"),
-            heroMaxHealthDisplay = document.getElementById("heroMaxHealth"),
-            healButton = document.getElementById("healButton");
-      // Prestige
-      const prestigeButton = document.getElementById("prestigeButton"),
-            documentPrestigeLevel = document.getElementById("prestigeLevelDisplay"),
-            documentPrestigeMultiplier = document.getElementById("prestigeMultiplierDisplay"),
-            prestigePointsDisplay = document.getElementById("prestigePointsDisplay"),
-            bonusMultiplierDisplay = document.getElementById("bonusMultiplierDisplay"),
-            buyPrestigeUpgradeButton = document.getElementById("buyPrestigeUpgrade"),
-            headerPrestigeLevel = document.getElementById("headerPrestigeLevel"),
-            headerPrestigeMultiplier = document.getElementById("headerPrestigeMultiplier"),
-            headerHighScore = document.getElementById("headerHighScore");
-      // Quests & Lore
-      const questListElem = document.getElementById("questList"),
-            activeQuestText = document.getElementById("activeQuestText"),
-            dynamicLoreContainer = document.getElementById("dynamicLore"),
-            dailyChallengeText = document.getElementById("dailyChallengeText");
-      // Skill Tree
-      const skillListElem = document.getElementById("skillList");
-      // Achievements
-      const achievementListElem = document.getElementById("achievementList");
-      // Seasonal event
-      const seasonalStatusElem = document.getElementById("seasonalStatus"),
-            activateEventButton = document.getElementById("activateEventButton");
-      // Leaderboard
-      const leaderboardListElem = document.getElementById("leaderboardList"),
-            shareScoreButton = document.getElementById("shareScoreButton");
-      // Statistics
-      // (IDs "totalGoldEarned", "totalClicks", "totalBattlesWon", "highestCombo" are in the Statistics section)
-      // Event Log
-      const eventLogDiv = document.getElementById("eventLog");
-      // Mini‑Game
-      const startMiniGameButton = document.getElementById("startMiniGame"),
-            miniGameModal = document.getElementById("miniGameModal"),
-            miniGameButton = document.getElementById("miniGameButton"),
-            endMiniGameButton = document.getElementById("endMiniGameButton");
-      // Reincarnation container
-      const reincarnateContainer = document.getElementById("reincarnateContainer");
-      // Settings
-      const settingsButton = document.getElementById("settingsButton"),
-            settingsModal = document.getElementById("settingsModal"),
-            musicVolumeSlider = document.getElementById("musicVolumeSlider"),
-            sfxVolumeSlider = document.getElementById("sfxVolumeSlider"),
-            muteToggle = document.getElementById("muteToggle"),
-            difficultySelect = document.getElementById("difficultySelect"),
-            challengeModeToggle = document.getElementById("challengeModeToggle"),
-            closeSettings = document.getElementById("closeSettings");
-      // Tutorial
-      const tutorialOverlay = document.getElementById("tutorialOverlay"),
-            dismissTutorial = document.getElementById("dismissTutorial");
-      // Audio elements
-      const backgroundMusic = document.getElementById("backgroundMusic"),
-            clickSound = document.getElementById("clickSound"),
-            levelUpSound = document.getElementById("levelUpSound"),
-            enemyDefeatedSound = document.getElementById("enemyDefeatedSound"),
-            upgradeSound = document.getElementById("upgradeSound");
-
+      // (Many DOM elements were defined above in the code block; see above.)
+      // For brevity, we assume the elements with IDs for new buildings, statistics, and mini-game are present.
+      
       // -------------------------
       // UTILITY FUNCTIONS
       // -------------------------
       function getPassiveIncomeMultiplier() {
         let extra = marketplaceOwned * 0.10; // Each Marketplace gives +10%
         return passiveBoost * (1 + guildLevel * 0.05 + extra);
-      }
-      // Define updateSkillTree() to manage sequential unlocking.
-      function updateSkillTree() {
-        const lis = document.querySelectorAll("#skillList li");
-        for (let i = 0; i < skillOrder.length; i++) {
-          const skillId = skillOrder[i];
-          const li = Array.from(lis).find(item => item.getAttribute("data-id") === skillId);
-          if(li) {
-            if(i === 0) {
-              li.style.display = "list-item";
-            } else {
-              const prevSkillId = skillOrder[i-1];
-              li.style.display = skills[prevSkillId] && skills[prevSkillId].purchased ? "list-item" : "none";
-            }
-          }
-        }
-      }
-      function updateSkillTreeDisplay() {
-        updateSkillTree();
       }
       function updateDisplays() {
         goldDisplay.textContent = Math.floor(gold);
@@ -792,11 +716,11 @@
         guildLevelDisplay.textContent = guildLevel;
         mageTowerCostDisplay.textContent = mageTowerCost;
         mageTowerLevelDisplay.textContent = mageTowerLevel;
-        document.getElementById("barracksCost").textContent = barracksCost;
+        barracksCostDisp.textContent = barracksCost;
         barracksOwnedDisplay.textContent = barracksOwned;
-        document.getElementById("marketplaceCost").textContent = marketplaceCost;
+        marketplaceCostDisp.textContent = marketplaceCost;
         marketplaceOwnedDisplay.textContent = marketplaceOwned;
-        document.getElementById("castleCost").textContent = castleCost;
+        castleCostDisp.textContent = castleCost;
         castleOwnedDisplay.textContent = castleOwned;
         heroLevelDisplay.textContent = hero.level;
         heroXPDisplay.textContent = hero.xp;
@@ -823,12 +747,13 @@
         headerPrestigeMultiplier.textContent = currentGoldMultiplier().toFixed(1);
         headerHighScore.textContent = highScore;
         document.getElementById("headerRelics").textContent = relics;
+        // Statistics
         document.getElementById("totalGoldEarned").textContent = Math.floor(totalGoldEarned);
         document.getElementById("totalClicks").textContent = totalClicks;
         document.getElementById("totalBattlesWon").textContent = totalBattlesWon;
         document.getElementById("highestCombo").textContent = highestCombo.toFixed(1);
         updateQuestDisplay();
-        updateSkillTreeDisplay();
+        updateSkillTree();
         updateAchievementDisplay();
         updateLeaderboard();
       }
@@ -882,32 +807,17 @@
           dailyChallenge = dailyChallenges[Math.floor(Math.random() * dailyChallenges.length)];
           localStorage.setItem("dailyChallenge", JSON.stringify({ date: today, challenge: dailyChallenge }));
         }
-        dailyChallengeText.textContent = "Daily Challenge: " + dailyChallenge;
+        document.getElementById("dailyChallengeText").textContent = "Daily Challenge: " + dailyChallenge;
       }
       updateDailyChallenge();
       // -------------------------
       // STATISTICS & EVENT LOG
       // -------------------------
-      let totalGoldEarned = 0, totalClicks = 0, totalBattlesWon = 0, highestCombo = 1;
       function addToStatistics(goldAmount, clicks = 0, battles = 0, combo = 1) {
         totalGoldEarned += goldAmount;
         totalClicks += clicks;
         totalBattlesWon += battles;
         if(combo > highestCombo) highestCombo = combo;
-      }
-      let eventLog = [];
-      function logEvent(message) {
-        eventLog.push(message);
-        if(eventLog.length > 10) { eventLog.shift(); }
-        updateEventLog();
-      }
-      function updateEventLog() {
-        eventLogDiv.innerHTML = "";
-        eventLog.forEach(msg => {
-          const p = document.createElement("p");
-          p.textContent = msg;
-          eventLogDiv.appendChild(p);
-        });
       }
       // -------------------------
       // ROYAL HERALD
@@ -1022,17 +932,9 @@
           const skillId = skillOrder[i];
           const li = Array.from(lis).find(item => item.getAttribute("data-id") === skillId);
           if(li) {
-            if(i === 0) {
-              li.style.display = "list-item";
-            } else {
-              const prevSkillId = skillOrder[i-1];
-              li.style.display = (skills[prevSkillId] && skills[prevSkillId].purchased) ? "list-item" : "none";
-            }
+            li.style.display = (i === 0 || (skills[skillOrder[i-1]] && skills[skillOrder[i-1]].purchased)) ? "list-item" : "none";
           }
         }
-      }
-      function updateSkillTreeDisplay() {
-        updateSkillTree();
       }
       document.querySelectorAll(".buySkillBtn").forEach(btn => {
         btn.addEventListener("click", function(e) {
@@ -1058,7 +960,8 @@
       // REINCARNATION
       // -------------------------
       function updateReincarnation() {
-        reincarnateContainer.innerHTML = "";
+        const container = document.getElementById("reincarnateContainer");
+        container.innerHTML = "";
         if(prestigeLevel >= 10) {
           const btn = document.createElement("button");
           btn.textContent = "Reincarnate";
@@ -1073,13 +976,22 @@
             updateDisplays();
             updateReincarnation();
           });
-          reincarnateContainer.appendChild(btn);
+          container.appendChild(btn);
         }
+      }
+      // -------------------------
+      // STATISTICS & EVENT LOG
+      // -------------------------
+      function addToStatistics(goldAmount, clicks = 0, battles = 0, combo = 1) {
+        totalGoldEarned += goldAmount;
+        totalClicks += clicks;
+        totalBattlesWon += battles;
+        if(combo > highestCombo) highestCombo = combo;
       }
       // -------------------------
       // MINI‑GAME FUNCTIONS
       // -------------------------
-      startMiniGameButton.addEventListener("click", function() {
+      document.getElementById("startMiniGame").addEventListener("click", function() {
         miniGameClicks = 0;
         miniGameTimeLeft = 10;
         document.getElementById("miniGameClicks").textContent = miniGameClicks;
@@ -1112,1109 +1024,21 @@
         updateDisplays();
       }
       // -------------------------
-      // DYNAMIC EXTRA CONTENT (Extra Skills & Extra Achievements)
+      // RANDOM WORLD EVENTS
       // -------------------------
-      // (Extra skills and achievements were generated during initialization.)
-      // -------------------------
-      // -------------------------
-      // PRESTIGE & REINCARNATION
-      // -------------------------
-      prestigeButton.addEventListener("click", function() {
-        if(hero.level < 10) { showNotification("You need to be at least Level 10 to Prestige!"); return; }
-        prestigeLevel++;
-        prestigePoints++;
-        showNotification("Prestige Activated! Gold Multiplier is now " + currentGoldMultiplier().toFixed(1) + "x", 3000);
-        if(gold > highScore) highScore = gold;
-        leaderboard.push({ name: "Hero", score: gold });
-        gold = 0; goldPerClick = 1; goldMineOwned = 0; goldMineCost = 10; clickUpgradeCost = 25;
-        critChance = 0.10; critMultiplier = 2; critUpgradeCost = 50;
-        autoClickerOwned = 0; autoClickerCost = 50;
-        blacksmithLevel = 0; blacksmithCost = 100;
-        guildLevel = 0; guildCost = 100;
-        mageTowerLevel = 0; mageTowerCost = 150;
-        barracksOwned = 0; barracksCost = 200;
-        marketplaceOwned = 0; marketplaceCost = 300;
-        castleOwned = 0; castleCost = 500;
-        hero = { level: 1, xp: 0, xpNeeded: 50, attack: 1, health: 100, maxHealth: 100 };
-        spawnEnemy();
-        updateDisplays();
-        prestigeButton.disabled = true;
-        attackButton.disabled = false;
-        specialAttackButton.disabled = false;
-        logEvent("Prestige activated!");
-        updateReincarnation();
-      });
-      buyPrestigeUpgradeButton.addEventListener("click", function() {
-        if(prestigePoints > 0) {
-          prestigePoints--;
-          bonusMultiplier += 0.2;
-          if(!muteSound) upgradeSound.play();
-          showNotification("Divine Blessing purchased! Bonus multiplier increased.", 2500);
-          updateDisplays();
-        } else {
-          showNotification("Not enough Prestige Points!");
-        }
-      });
-      // -------------------------
-      // STATISTICS & EVENT LOG UPDATES
-      // -------------------------
-      setInterval(() => { checkQuests(); checkAchievements(); }, 2000);
-      function updateLeaderboard() {
-        leaderboardListElem.innerHTML = "";
-        let sorted = leaderboard.sort((a,b) => b.score - a.score).slice(0, 5);
-        sorted.forEach(entry => {
-          const li = document.createElement("li");
-          li.textContent = entry.name + ": " + Math.floor(entry.score);
-          leaderboardListElem.appendChild(li);
-        });
-      }
-      // -------------------------
-      // MINI‑GAME TRIGGER & FUNCTIONS (already set above)
-      // -------------------------
-      // -------------------------
-      // ENEMY SPAWNING
-      // -------------------------
-      function spawnEnemy() {
-        enemy.level = hero.level;
+      function triggerRandomEvent() {
         let r = Math.random();
-        if(r < 0.2) {
-          enemy.type = "Boss";
-          enemy.maxHP = ((10 + enemy.level * 5) * 3) * difficultyMultiplier * (challengeMode ? 1.2 : 1);
-          enemy.rewardGold = ((5 + enemy.level * 2) * 3);
-          enemy.rewardXP = ((10 + enemy.level * 3) * 3);
-          enemy.dodgeChance = 0;
-          enemy.counterDamage = enemy.level * 3;
-          enemy.regen = 0;
-          documentHeaderEnemyType.textContent = "(Boss)";
-        } else if(r < 0.3) {
-          enemy.type = "Armored";
-          enemy.maxHP = Math.floor((10 + enemy.level * 5) * 1.5 * difficultyMultiplier);
-          enemy.rewardGold = Math.floor((5 + enemy.level * 2) * 1.2);
-          enemy.rewardXP = Math.floor((10 + enemy.level * 3) * 0.8);
-          enemy.dodgeChance = 0;
-          enemy.counterDamage = enemy.level * 2;
-          enemy.regen = 0;
-          documentHeaderEnemyType.textContent = "(Armored)";
-        } else if(r < 0.4) {
-          enemy.type = "Agile";
-          enemy.maxHP = (10 + enemy.level * 5) * difficultyMultiplier;
-          enemy.rewardGold = 5 + enemy.level * 2;
-          enemy.rewardXP = 10 + enemy.level * 3;
-          enemy.dodgeChance = 0.3;
-          enemy.counterDamage = enemy.level * 2;
-          enemy.regen = 0;
-          documentHeaderEnemyType.textContent = "(Agile)";
-        } else if(r < 0.5) {
-          enemy.type = "Regenerator";
-          enemy.maxHP = Math.floor((10 + enemy.level * 5) * 1.2 * difficultyMultiplier);
-          enemy.rewardGold = Math.floor((5 + enemy.level * 2) * 1.1);
-          enemy.rewardXP = Math.floor((10 + enemy.level * 3) * 1.1);
-          enemy.dodgeChance = 0;
-          enemy.counterDamage = enemy.level * 2;
-          enemy.regen = Math.floor(enemy.maxHP * 0.02);
-          documentHeaderEnemyType.textContent = "(Regenerator)";
-        } else {
-          enemy.type = "Normal";
-          enemy.maxHP = (10 + enemy.level * 5) * difficultyMultiplier;
-          enemy.rewardGold = 5 + enemy.level * 2;
-          enemy.rewardXP = 10 + enemy.level * 3;
-          enemy.dodgeChance = 0;
-          enemy.counterDamage = enemy.level * 2;
-          enemy.regen = 0;
-          documentHeaderEnemyType.textContent = "";
-        }
-        enemy.currentHP = enemy.maxHP;
-        updateDisplays();
-      }
-      // -------------------------
-      // LEVEL-UP & BATTLE FUNCTIONS
-      // -------------------------
-      function checkLevelUp() {
-        while(hero.xp >= hero.xpNeeded) {
-          hero.xp -= hero.xpNeeded;
-          hero.level++;
-          hero.attack++;
-          hero.maxHealth += 20;
-          hero.health = hero.maxHealth;
-          hero.xpNeeded = Math.floor(hero.xpNeeded * 1.5);
-          showNotification("Level Up! You are now level " + hero.level + "!", 2500);
-          if(!muteSound) levelUpSound.play();
+        if(r < 0.3) {
+          temporaryGoldBonus = 2;
+          showNotification("Treasure Discovery! Gold earnings doubled for 30s!", 3000);
+          setTimeout(() => { temporaryGoldBonus = 1; updateDisplays(); }, 30000);
+        } else if(r < 0.6) {
+          relics++;
+          showNotification("Ancient Relic Found! You gained 1 relic.", 3000);
           updateDisplays();
-          if(hero.level >= 10) prestigeButton.disabled = false;
         }
       }
-      // -------------------------
-      // SAVE/LOAD & OFFLINE PROGRESS
-      // -------------------------
-      function saveGame() {
-        try {
-          const state = {
-            saveVersion,
-            gold, goldPerClick, goldMineOwned, goldMineCost, clickUpgradeCost,
-            critChance, critMultiplier, critUpgradeCost,
-            autoClickerOwned, autoClickerCost, blacksmithLevel, blacksmithCost,
-            guildLevel, guildCost, mageTowerLevel, mageTowerCost,
-            barracksOwned, barracksCost, marketplaceOwned, marketplaceCost, castleOwned, castleCost,
-            hero, enemyDefeatedCount, specialAttackCount,
-            prestigeLevel, prestigePoints, bonusMultiplier,
-            highScore, passiveBoost, relics,
-            quests, achievements, skills,
-            lastSaveTime: Date.now(),
-            leaderboard
-          };
-          localStorage.setItem("medievalIdleSave", JSON.stringify(state));
-        } catch(e) {
-          console.error("Error saving game:", e);
-        }
-      }
-      function loadGame() {
-        try {
-          const stateStr = localStorage.getItem("medievalIdleSave");
-          if(stateStr) {
-            const state = JSON.parse(stateStr);
-            if(state.saveVersion !== saveVersion) {
-              console.warn("Save version mismatch – starting fresh.");
-              return;
-            }
-            gold = state.gold; goldPerClick = state.goldPerClick; goldMineOwned = state.goldMineOwned;
-            goldMineCost = state.goldMineCost; clickUpgradeCost = state.clickUpgradeCost;
-            critChance = state.critChance; critMultiplier = state.critMultiplier; critUpgradeCost = state.critUpgradeCost;
-            autoClickerOwned = state.autoClickerOwned; autoClickerCost = state.autoClickerCost;
-            blacksmithLevel = state.blacksmithLevel; blacksmithCost = state.blacksmithCost;
-            guildLevel = state.guildLevel; guildCost = state.guildCost;  // FIXED: use state.guildCost
-            mageTowerLevel = state.mageTowerLevel; mageTowerCost = state.mageTowerCost;
-            barracksOwned = state.barracksOwned; barracksCost = state.barracksCost;
-            marketplaceOwned = state.marketplaceOwned; marketplaceCost = state.marketplaceCost;
-            castleOwned = state.castleOwned; castleCost = state.castleCost;
-            hero = state.hero; enemyDefeatedCount = state.enemyDefeatedCount; specialAttackCount = state.specialAttackCount;
-            prestigeLevel = state.prestigeLevel; prestigePoints = state.prestigePoints; bonusMultiplier = state.bonusMultiplier;
-            highScore = state.highScore; passiveBoost = state.passiveBoost; relics = state.relics;
-            leaderboard = state.leaderboard || [];
-            lastSaveTime = state.lastSaveTime;
-            const offlineSeconds = Math.floor((Date.now() - lastSaveTime) / 1000);
-            const offlineGold = offlineSeconds * (goldMineOwned + autoClickerOwned * goldPerClick) * currentGoldMultiplier() * getPassiveIncomeMultiplier();
-            gold += offlineGold;
-            totalGoldEarned += offlineGold;
-            showNotification("Welcome back! You earned " + Math.floor(offlineGold) + " gold offline.", 3000);
-          }
-        } catch(e) {
-          console.error("Error loading game:", e);
-        }
-      }
-      window.addEventListener("beforeunload", saveGame);
-      window.addEventListener("load", () => {
-        loadGame();
-        updateDisplays();
-        spawnEnemy();
-        backgroundMusic.volume = musicVolume;
-        backgroundMusic.play().catch(err => console.log("Autoplay prevented", err));
-        autoClickerLoop();
-        updateDailyChallenge();
-        updateReincarnation();
-        if(!localStorage.getItem("tutorialSeen")) {
-          tutorialOverlay.style.display = "flex";
-        }
-      });
-      // -------------------------
-      // AUTO CLICKER LOOP (using setTimeout for dynamic interval)
-      // -------------------------
-      function autoClickerLoop() {
-        setTimeout(function() {
-          if(autoClickerOwned > 0) {
-            let income = autoClickerOwned * goldPerClick * currentGoldMultiplier() * getPassiveIncomeMultiplier() * temporaryGoldBonus;
-            gold += income;
-            totalGoldEarned += income;
-            updateDisplays();
-          }
-          autoClickerLoop();
-        }, autoClickInterval);
-      }
-      // -------------------------
-      // GAME LOOP (using requestAnimationFrame)
-      // -------------------------
-      function gameLoop() {
-        updateSpecialCooldownBar();
-        if(enemy.type === "Regenerator" && enemy.currentHP > 0) {
-          enemy.currentHP = Math.min(enemy.currentHP + enemy.regen * 0.016, enemy.maxHP);
-          updateDisplays();
-        }
-        requestAnimationFrame(gameLoop);
-      }
-      gameLoop();
-      // -------------------------
-      // EVENT LISTENERS & GAMEPLAY
-      // -------------------------
-      clickButton.addEventListener("click", function(e) {
-        if(!muteSound) clickSound.play();
-        totalClicks++;
-        let goldEarned = goldPerClick;
-        if(Math.random() < critChance) {
-          goldEarned *= critMultiplier;
-          showNotification("Critical Strike! +" + Math.floor(goldEarned * currentGoldMultiplier() * temporaryGoldBonus) + " Gold", 1500);
-        }
-        const totalGold = goldEarned * currentGoldMultiplier() * temporaryGoldBonus;
-        gold += totalGold;
-        totalGoldEarned += totalGold;
-        createGoldFloat(totalGold, e.clientX, e.clientY);
-        updateDisplays();
-        checkAchievements();
-        checkQuests();
-      });
-      upgradeCritButton.addEventListener("click", function() {
-        if(gold >= critUpgradeCost) {
-          gold -= critUpgradeCost;
-          critChance += 0.05;
-          critUpgradeCost = Math.floor(critUpgradeCost * 1.5);
-          if(!muteSound) upgradeSound.play();
-          updateDisplays();
-        } else { showNotification("Not enough gold to upgrade Critical Strike!"); }
-      });
-      buyGoldMineButton.addEventListener("click", function() {
-        if(gold >= goldMineCost) {
-          gold -= goldMineCost;
-          goldMineOwned++;
-          goldMineCost = Math.floor(goldMineCost * 1.15);
-          if(!muteSound) upgradeSound.play();
-          updateDisplays();
-          checkQuests();
-        } else { showNotification("Not enough gold for Gold Mine!"); }
-      });
-      upgradeClickButton.addEventListener("click", function() {
-        if(gold >= clickUpgradeCost) {
-          gold -= clickUpgradeCost;
-          goldPerClick++;
-          clickUpgradeCost = Math.floor(clickUpgradeCost * 1.2);
-          if(!muteSound) upgradeSound.play();
-          updateDisplays();
-        } else { showNotification("Not enough gold to upgrade click power!"); }
-      });
-      buyAutoClickerButton.addEventListener("click", function() {
-        if(gold >= autoClickerCost) {
-          gold -= autoClickerCost;
-          autoClickerOwned++;
-          autoClickerCost = Math.floor(autoClickerCost * 1.2);
-          if(!muteSound) upgradeSound.play();
-          updateDisplays();
-        } else { showNotification("Not enough gold for Auto Clicker!"); }
-      });
-      hireBlacksmithButton.addEventListener("click", function() {
-        if(gold >= blacksmithCost) {
-          gold -= blacksmithCost;
-          blacksmithLevel++;
-          hero.attack += 1;
-          blacksmithCost = Math.floor(blacksmithCost * 1.5);
-          if(!muteSound) upgradeSound.play();
-          updateDisplays();
-        } else { showNotification("Not enough gold to hire Blacksmith!"); }
-      });
-      document.getElementById("buyGuild").addEventListener("click", function() {
-        if(gold >= guildCost) {
-          gold -= guildCost;
-          guildLevel++;
-          guildCost = Math.floor(guildCost * 1.3);
-          if(!muteSound) upgradeSound.play();
-          showNotification("Adventurer's Guild upgraded! Passive income increased.", 2000);
-          updateDisplays();
-        } else { showNotification("Not enough gold for Adventurer's Guild!"); }
-      });
-      document.getElementById("buyMageTower").addEventListener("click", function() {
-        if(gold >= mageTowerCost) {
-          gold -= mageTowerCost;
-          mageTowerLevel++;
-          mageTowerCost = Math.floor(mageTowerCost * 1.4);
-          critMultiplier += 0.1;
-          if(!muteSound) upgradeSound.play();
-          showNotification("Mage Tower built! Critical multiplier increased.", 2000);
-          updateDisplays();
-        } else { showNotification("Not enough gold for Mage Tower!"); }
-      });
-      document.getElementById("buyBarracks").addEventListener("click", function() {
-        if(gold >= barracksCost) {
-          gold -= barracksCost;
-          barracksOwned++;
-          barracksCost = Math.floor(barracksCost * 1.25);
-          hero.attack += 3;
-          if(!muteSound) upgradeSound.play();
-          showNotification("Barracks acquired! +3 attack per Barracks.", 2000);
-          updateDisplays();
-        } else { showNotification("Not enough gold for Barracks!"); }
-      });
-      document.getElementById("buyMarketplace").addEventListener("click", function() {
-        if(gold >= marketplaceCost) {
-          gold -= marketplaceCost;
-          marketplaceOwned++;
-          marketplaceCost = Math.floor(marketplaceCost * 1.3);
-          if(!muteSound) upgradeSound.play();
-          showNotification("Marketplace acquired! Passive income boosted.", 2000);
-          updateDisplays();
-        } else { showNotification("Not enough gold for Marketplace!"); }
-      });
-      document.getElementById("buyCastle").addEventListener("click", function() {
-        if(gold >= castleCost) {
-          gold -= castleCost;
-          castleOwned++;
-          castleCost = Math.floor(castleCost * 1.4);
-          bonusMultiplier += 0.2;
-          if(!muteSound) upgradeSound.play();
-          showNotification("Castle built! Gold multiplier increased.", 2000);
-          updateDisplays();
-        } else { showNotification("Not enough gold for Castle!"); }
-      });
-      healButton.addEventListener("click", function() {
-        if(gold >= healCost) {
-          gold -= healCost;
-          hero.health = Math.min(hero.health + healAmount, hero.maxHealth);
-          showNotification("Healed for " + healAmount + " HP!");
-          updateDisplays();
-        } else { showNotification("Not enough gold to heal!"); }
-      });
-      setInterval(function() {
-        let income = goldMineOwned * currentGoldMultiplier() * getPassiveIncomeMultiplier() * temporaryGoldBonus;
-        gold += income;
-        totalGoldEarned += income;
-        updateDisplays();
-      }, 1000);
-      attackButton.addEventListener("click", function() {
-        if(enemy.currentHP > 0) {
-          const currentTime = Date.now();
-          if(currentTime - lastAttackTime < 2000) {
-            comboMultiplier += 0.1;
-          } else {
-            comboMultiplier = 1;
-          }
-          lastAttackTime = currentTime;
-          let damage = hero.attack * comboMultiplier;
-          if(enemy.type === "Agile" && Math.random() < enemy.dodgeChance) {
-            showNotification("Enemy dodged your attack!");
-          } else {
-            enemy.currentHP -= damage;
-            if(comboMultiplier > 1) {
-              showNotification("Combo x" + comboMultiplier.toFixed(1) + " for " + Math.floor(damage) + " damage!");
-            }
-          }
-          if(enemy.currentHP > 0 && Math.random() < 0.2) {
-            let counterDmg = enemy.counterDamage;
-            hero.health -= counterDmg;
-            showNotification("Enemy counterattacked for " + counterDmg + " damage!");
-            if(hero.health <= 0) {
-              hero.health = 0;
-              showNotification("You died! Prestige to reset.", 4000);
-              attackButton.disabled = true;
-              specialAttackButton.disabled = true;
-              totalBattlesWon++;
-              return;
-            }
-          }
-          if(enemy.currentHP <= 0) {
-            if(!muteSound) enemyDefeatedSound.play();
-            enemyDefeatedCount++;
-            totalBattlesWon++;
-            if(enemy.type === "Boss") relics++;
-            gold += enemy.rewardGold * currentGoldMultiplier() * temporaryGoldBonus;
-            hero.xp += enemy.rewardXP;
-            showNotification("Enemy defeated! Gained " + Math.floor(enemy.rewardGold * currentGoldMultiplier() * temporaryGoldBonus) + " Gold and " + enemy.rewardXP + " XP!");
-            spawnEnemy();
-            checkLevelUp();
-          }
-          updateDisplays();
-          checkQuests();
-          checkAchievements();
-        } else { showNotification("Spawn an enemy first!"); }
-      });
-      specialAttackButton.addEventListener("click", function() {
-        if(!specialAvailable) { showNotification("Special Attack is on cooldown!"); return; }
-        if(enemy.type === "Agile" && Math.random() < enemy.dodgeChance/2) {
-          showNotification("Enemy evaded your Special Attack!");
-        } else {
-          enemy.currentHP -= hero.attack * 3;
-          specialAttackCount++;
-          showNotification("Special Attack dealt " + (hero.attack * 3) + " damage!");
-        }
-        if(enemy.currentHP <= 0) {
-          if(!muteSound) enemyDefeatedSound.play();
-          enemyDefeatedCount++;
-          gold += enemy.rewardGold * currentGoldMultiplier() * temporaryGoldBonus;
-          hero.xp += enemy.rewardXP;
-          showNotification("Enemy defeated with Special Attack! Gained " + Math.floor(enemy.rewardGold * currentGoldMultiplier() * temporaryGoldBonus) + " Gold and " + enemy.rewardXP + " XP!");
-          spawnEnemy();
-          checkLevelUp();
-        }
-        updateDisplays();
-        specialAvailable = false;
-        specialAttackButton.disabled = true;
-        specialCooldownRemaining = specialCooldownTime;
-      });
-      setInterval(function(){
-        if(!specialAvailable && specialCooldownRemaining > 0) {
-          specialCooldownRemaining--;
-          if(specialCooldownRemaining <= 0) {
-            specialAvailable = true;
-            specialAttackButton.disabled = false;
-          }
-        }
-      }, 1000);
-      spawnEnemyButton.addEventListener("click", spawnEnemy);
-      // -------------------------
-      // PRESTIGE & REINCARNATION
-      // -------------------------
-      prestigeButton.addEventListener("click", function() {
-        if(hero.level < 10) { showNotification("You need to be at least Level 10 to Prestige!"); return; }
-        prestigeLevel++;
-        prestigePoints++;
-        showNotification("Prestige Activated! Gold Multiplier is now " + currentGoldMultiplier().toFixed(1) + "x", 3000);
-        if(gold > highScore) highScore = gold;
-        leaderboard.push({ name: "Hero", score: gold });
-        gold = 0; goldPerClick = 1; goldMineOwned = 0; goldMineCost = 10; clickUpgradeCost = 25;
-        critChance = 0.10; critMultiplier = 2; critUpgradeCost = 50;
-        autoClickerOwned = 0; autoClickerCost = 50;
-        blacksmithLevel = 0; blacksmithCost = 100;
-        guildLevel = 0; guildCost = 100;
-        mageTowerLevel = 0; mageTowerCost = 150;
-        barracksOwned = 0; barracksCost = 200;
-        marketplaceOwned = 0; marketplaceCost = 300;
-        castleOwned = 0; castleCost = 500;
-        hero = { level: 1, xp: 0, xpNeeded: 50, attack: 1, health: 100, maxHealth: 100 };
-        spawnEnemy();
-        updateDisplays();
-        prestigeButton.disabled = true;
-        attackButton.disabled = false;
-        specialAttackButton.disabled = false;
-        logEvent("Prestige activated!");
-        updateReincarnation();
-      });
-      buyPrestigeUpgradeButton.addEventListener("click", function() {
-        if(prestigePoints > 0) {
-          prestigePoints--;
-          bonusMultiplier += 0.2;
-          if(!muteSound) upgradeSound.play();
-          showNotification("Divine Blessing purchased! Bonus multiplier increased.", 2500);
-          updateDisplays();
-        } else {
-          showNotification("Not enough Prestige Points!");
-        }
-      });
-      // -------------------------
-      // STATISTICS & EVENT LOG UPDATES
-      // -------------------------
-      setInterval(() => { checkQuests(); checkAchievements(); }, 2000);
-      function updateLeaderboard() {
-        leaderboardListElem.innerHTML = "";
-        let sorted = leaderboard.sort((a,b) => b.score - a.score).slice(0, 5);
-        sorted.forEach(entry => {
-          const li = document.createElement("li");
-          li.textContent = entry.name + ": " + Math.floor(entry.score);
-          leaderboardListElem.appendChild(li);
-        });
-      }
-      // -------------------------
-      // SETTINGS & TUTORIAL FUNCTIONS
-      // -------------------------
-      settingsButton.addEventListener("click", function() {
-        settingsModal.style.display = "block";
-        musicVolumeSlider.value = musicVolume;
-        sfxVolumeSlider.value = sfxVolume;
-        muteToggle.checked = muteSound;
-        difficultySelect.value = difficultyMultiplier;
-        challengeModeToggle.checked = challengeMode;
-      });
-      closeSettings.addEventListener("click", function() {
-        difficultyMultiplier = parseFloat(difficultySelect.value);
-        challengeMode = challengeModeToggle.checked;
-        settingsModal.style.display = "none";
-        showNotification("Settings updated.");
-      });
-      musicVolumeSlider.addEventListener("input", function() {
-        musicVolume = parseFloat(this.value);
-        backgroundMusic.volume = musicVolume;
-      });
-      sfxVolumeSlider.addEventListener("input", function() {
-        sfxVolume = parseFloat(this.value);
-      });
-      muteToggle.addEventListener("change", function() {
-        muteSound = this.checked;
-        if(muteSound) {
-          backgroundMusic.pause();
-        } else {
-          backgroundMusic.play();
-        }
-      });
-      shareScoreButton.addEventListener("click", function() {
-        if(navigator.share) {
-          navigator.share({
-            title: "Medieval Idle Adventure",
-            text: "My high score is " + highScore + " gold and " + relics + " relics!",
-          }).then(() => console.log("Score shared!"))
-            .catch(err => console.error("Error sharing:", err));
-        } else {
-          showNotification("Sharing not supported on this browser.");
-        }
-      });
-      dismissTutorial.addEventListener("click", function() {
-        tutorialOverlay.style.display = "none";
-        localStorage.setItem("tutorialSeen", "true");
-        backgroundMusic.play().catch(err => console.log("Music play error:", err));
-      });
-      // -------------------------
-      // MINI‑GAME FUNCTIONS
-      // -------------------------
-      startMiniGameButton.addEventListener("click", function() {
-        miniGameClicks = 0;
-        miniGameTimeLeft = 10;
-        document.getElementById("miniGameClicks").textContent = miniGameClicks;
-        document.getElementById("miniGameTimer").textContent = "Time left: 10s";
-        miniGameModal.style.display = "block";
-        endMiniGameButton.style.display = "none";
-        miniGameInterval = setInterval(() => {
-          miniGameTimeLeft--;
-          document.getElementById("miniGameTimer").textContent = "Time left: " + miniGameTimeLeft + "s";
-          if(miniGameTimeLeft <= 0) {
-            clearInterval(miniGameInterval);
-            endMiniGame();
-          }
-        }, 1000);
-      });
-      miniGameButton.addEventListener("click", function() {
-        miniGameClicks++;
-        document.getElementById("miniGameClicks").textContent = miniGameClicks;
-      });
-      endMiniGameButton.addEventListener("click", function() {
-        endMiniGame();
-      });
-      function endMiniGame() {
-        clearInterval(miniGameInterval);
-        miniGameModal.style.display = "none";
-        let bonusGold = miniGameClicks * 10;
-        gold += bonusGold;
-        showNotification("Mini‑Game complete! You earned " + bonusGold + " bonus gold!");
-        addToStatistics(bonusGold, miniGameClicks);
-        updateDisplays();
-      }
-      // -------------------------
-      // DYNAMIC EXTRA CONTENT (Extra Skills & Extra Achievements)
-      // -------------------------
-      // (Extra skills and achievements were generated during initialization.)
-      // -------------------------
-      // PRESTIGE & REINCARNATION are handled above.
-      // -------------------------
-      // MINI‑GAME: Already handled.
-      // -------------------------
-      // ENEMY SPAWNING (with enhanced types)
-      // -------------------------
-      function spawnEnemy() {
-        enemy.level = hero.level;
-        let r = Math.random();
-        if(r < 0.2) {
-          enemy.type = "Boss";
-          enemy.maxHP = ((10 + enemy.level * 5) * 3) * difficultyMultiplier * (challengeMode ? 1.2 : 1);
-          enemy.rewardGold = ((5 + enemy.level * 2) * 3);
-          enemy.rewardXP = ((10 + enemy.level * 3) * 3);
-          enemy.dodgeChance = 0;
-          enemy.counterDamage = enemy.level * 3;
-          enemy.regen = 0;
-          documentHeaderEnemyType.textContent = "(Boss)";
-        } else if(r < 0.3) {
-          enemy.type = "Armored";
-          enemy.maxHP = Math.floor((10 + enemy.level * 5) * 1.5 * difficultyMultiplier);
-          enemy.rewardGold = Math.floor((5 + enemy.level * 2) * 1.2);
-          enemy.rewardXP = Math.floor((10 + enemy.level * 3) * 0.8);
-          enemy.dodgeChance = 0;
-          enemy.counterDamage = enemy.level * 2;
-          enemy.regen = 0;
-          documentHeaderEnemyType.textContent = "(Armored)";
-        } else if(r < 0.4) {
-          enemy.type = "Agile";
-          enemy.maxHP = (10 + enemy.level * 5) * difficultyMultiplier;
-          enemy.rewardGold = 5 + enemy.level * 2;
-          enemy.rewardXP = 10 + enemy.level * 3;
-          enemy.dodgeChance = 0.3;
-          enemy.counterDamage = enemy.level * 2;
-          enemy.regen = 0;
-          documentHeaderEnemyType.textContent = "(Agile)";
-        } else if(r < 0.5) {
-          enemy.type = "Regenerator";
-          enemy.maxHP = Math.floor((10 + enemy.level * 5) * 1.2 * difficultyMultiplier);
-          enemy.rewardGold = Math.floor((5 + enemy.level * 2) * 1.1);
-          enemy.rewardXP = Math.floor((10 + enemy.level * 3) * 1.1);
-          enemy.dodgeChance = 0;
-          enemy.counterDamage = enemy.level * 2;
-          enemy.regen = Math.floor(enemy.maxHP * 0.02);
-          documentHeaderEnemyType.textContent = "(Regenerator)";
-        } else {
-          enemy.type = "Normal";
-          enemy.maxHP = (10 + enemy.level * 5) * difficultyMultiplier;
-          enemy.rewardGold = 5 + enemy.level * 2;
-          enemy.rewardXP = 10 + enemy.level * 3;
-          enemy.dodgeChance = 0;
-          enemy.counterDamage = enemy.level * 2;
-          enemy.regen = 0;
-          documentHeaderEnemyType.textContent = "";
-        }
-        enemy.currentHP = enemy.maxHP;
-        updateDisplays();
-      }
-      // -------------------------
-      // LEVEL-UP & BATTLE FUNCTIONS
-      // -------------------------
-      function checkLevelUp() {
-        while(hero.xp >= hero.xpNeeded) {
-          hero.xp -= hero.xpNeeded;
-          hero.level++;
-          hero.attack++;
-          hero.maxHealth += 20;
-          hero.health = hero.maxHealth;
-          hero.xpNeeded = Math.floor(hero.xpNeeded * 1.5);
-          showNotification("Level Up! You are now level " + hero.level + "!", 2500);
-          if(!muteSound) levelUpSound.play();
-          updateDisplays();
-          if(hero.level >= 10) prestigeButton.disabled = false;
-        }
-      }
-      // -------------------------
-      // SAVE/LOAD & OFFLINE PROGRESS
-      // -------------------------
-      function saveGame() {
-        try {
-          const state = {
-            saveVersion,
-            gold, goldPerClick, goldMineOwned, goldMineCost, clickUpgradeCost,
-            critChance, critMultiplier, critUpgradeCost,
-            autoClickerOwned, autoClickerCost, blacksmithLevel, blacksmithCost,
-            guildLevel, guildCost, mageTowerLevel, mageTowerCost,
-            barracksOwned, barracksCost, marketplaceOwned, marketplaceCost, castleOwned, castleCost,
-            hero, enemyDefeatedCount, specialAttackCount,
-            prestigeLevel, prestigePoints, bonusMultiplier,
-            highScore, passiveBoost, relics,
-            quests, achievements, skills,
-            lastSaveTime: Date.now(),
-            leaderboard
-          };
-          localStorage.setItem("medievalIdleSave", JSON.stringify(state));
-        } catch(e) {
-          console.error("Error saving game:", e);
-        }
-      }
-      function loadGame() {
-        try {
-          const stateStr = localStorage.getItem("medievalIdleSave");
-          if(stateStr) {
-            const state = JSON.parse(stateStr);
-            if(state.saveVersion !== saveVersion) {
-              console.warn("Save version mismatch – starting fresh.");
-              return;
-            }
-            gold = state.gold; goldPerClick = state.goldPerClick; goldMineOwned = state.goldMineOwned;
-            goldMineCost = state.goldMineCost; clickUpgradeCost = state.clickUpgradeCost;
-            critChance = state.critChance; critMultiplier = state.critMultiplier; critUpgradeCost = state.critUpgradeCost;
-            autoClickerOwned = state.autoClickerOwned; autoClickerCost = state.autoClickerCost;
-            blacksmithLevel = state.blacksmithLevel; blacksmithCost = state.blacksmithCost;
-            guildLevel = state.guildLevel; guildCost = state.guildCost;  // FIXED HERE
-            mageTowerLevel = state.mageTowerLevel; mageTowerCost = state.mageTowerCost;
-            barracksOwned = state.barracksOwned; barracksCost = state.barracksCost;
-            marketplaceOwned = state.marketplaceOwned; marketplaceCost = state.marketplaceCost;
-            castleOwned = state.castleOwned; castleCost = state.castleCost;
-            hero = state.hero; enemyDefeatedCount = state.enemyDefeatedCount; specialAttackCount = state.specialAttackCount;
-            prestigeLevel = state.prestigeLevel; prestigePoints = state.prestigePoints; bonusMultiplier = state.bonusMultiplier;
-            highScore = state.highScore; passiveBoost = state.passiveBoost; relics = state.relics;
-            leaderboard = state.leaderboard || [];
-            lastSaveTime = state.lastSaveTime;
-            const offlineSeconds = Math.floor((Date.now() - lastSaveTime) / 1000);
-            const offlineGold = offlineSeconds * (goldMineOwned + autoClickerOwned * goldPerClick) * currentGoldMultiplier() * getPassiveIncomeMultiplier();
-            gold += offlineGold;
-            totalGoldEarned += offlineGold;
-            showNotification("Welcome back! You earned " + Math.floor(offlineGold) + " gold offline.", 3000);
-          }
-        } catch(e) {
-          console.error("Error loading game:", e);
-        }
-      }
-      window.addEventListener("beforeunload", saveGame);
-      window.addEventListener("load", () => {
-        loadGame();
-        updateDisplays();
-        spawnEnemy();
-        backgroundMusic.volume = musicVolume;
-        backgroundMusic.play().catch(err => console.log("Autoplay prevented", err));
-        autoClickerLoop();
-        updateDailyChallenge();
-        updateReincarnation();
-        if(!localStorage.getItem("tutorialSeen")) {
-          tutorialOverlay.style.display = "flex";
-        }
-      });
-      // -------------------------
-      // AUTO CLICKER LOOP (using setTimeout)
-      // -------------------------
-      function autoClickerLoop() {
-        setTimeout(function() {
-          if(autoClickerOwned > 0) {
-            let income = autoClickerOwned * goldPerClick * currentGoldMultiplier() * getPassiveIncomeMultiplier() * temporaryGoldBonus;
-            gold += income;
-            totalGoldEarned += income;
-            updateDisplays();
-          }
-          autoClickerLoop();
-        }, autoClickInterval);
-      }
-      // -------------------------
-      // GAME LOOP (using requestAnimationFrame)
-      // -------------------------
-      function gameLoop() {
-        updateSpecialCooldownBar();
-        if(enemy.type === "Regenerator" && enemy.currentHP > 0) {
-          enemy.currentHP = Math.min(enemy.currentHP + enemy.regen * 0.016, enemy.maxHP);
-          updateDisplays();
-        }
-        requestAnimationFrame(gameLoop);
-      }
-      gameLoop();
-      // -------------------------
-      // EVENT LISTENERS & GAMEPLAY
-      // -------------------------
-      clickButton.addEventListener("click", function(e) {
-        if(!muteSound) clickSound.play();
-        totalClicks++;
-        let goldEarned = goldPerClick;
-        if(Math.random() < critChance) {
-          goldEarned *= critMultiplier;
-          showNotification("Critical Strike! +" + Math.floor(goldEarned * currentGoldMultiplier() * temporaryGoldBonus) + " Gold", 1500);
-        }
-        const totalGold = goldEarned * currentGoldMultiplier() * temporaryGoldBonus;
-        gold += totalGold;
-        totalGoldEarned += totalGold;
-        createGoldFloat(totalGold, e.clientX, e.clientY);
-        updateDisplays();
-        checkAchievements();
-        checkQuests();
-      });
-      upgradeCritButton.addEventListener("click", function() {
-        if(gold >= critUpgradeCost) {
-          gold -= critUpgradeCost;
-          critChance += 0.05;
-          critUpgradeCost = Math.floor(critUpgradeCost * 1.5);
-          if(!muteSound) upgradeSound.play();
-          updateDisplays();
-        } else { showNotification("Not enough gold to upgrade Critical Strike!"); }
-      });
-      buyGoldMineButton.addEventListener("click", function() {
-        if(gold >= goldMineCost) {
-          gold -= goldMineCost;
-          goldMineOwned++;
-          goldMineCost = Math.floor(goldMineCost * 1.15);
-          if(!muteSound) upgradeSound.play();
-          updateDisplays();
-          checkQuests();
-        } else { showNotification("Not enough gold for Gold Mine!"); }
-      });
-      upgradeClickButton.addEventListener("click", function() {
-        if(gold >= clickUpgradeCost) {
-          gold -= clickUpgradeCost;
-          goldPerClick++;
-          clickUpgradeCost = Math.floor(clickUpgradeCost * 1.2);
-          if(!muteSound) upgradeSound.play();
-          updateDisplays();
-        } else { showNotification("Not enough gold to upgrade click power!"); }
-      });
-      buyAutoClickerButton.addEventListener("click", function() {
-        if(gold >= autoClickerCost) {
-          gold -= autoClickerCost;
-          autoClickerOwned++;
-          autoClickerCost = Math.floor(autoClickerCost * 1.2);
-          if(!muteSound) upgradeSound.play();
-          updateDisplays();
-        } else { showNotification("Not enough gold for Auto Clicker!"); }
-      });
-      hireBlacksmithButton.addEventListener("click", function() {
-        if(gold >= blacksmithCost) {
-          gold -= blacksmithCost;
-          blacksmithLevel++;
-          hero.attack += 1;
-          blacksmithCost = Math.floor(blacksmithCost * 1.5);
-          if(!muteSound) upgradeSound.play();
-          updateDisplays();
-        } else { showNotification("Not enough gold to hire Blacksmith!"); }
-      });
-      document.getElementById("buyGuild").addEventListener("click", function() {
-        if(gold >= guildCost) {
-          gold -= guildCost;
-          guildLevel++;
-          guildCost = Math.floor(guildCost * 1.3);
-          if(!muteSound) upgradeSound.play();
-          showNotification("Adventurer's Guild upgraded! Passive income increased.", 2000);
-          updateDisplays();
-        } else { showNotification("Not enough gold for Adventurer's Guild!"); }
-      });
-      document.getElementById("buyMageTower").addEventListener("click", function() {
-        if(gold >= mageTowerCost) {
-          gold -= mageTowerCost;
-          mageTowerLevel++;
-          mageTowerCost = Math.floor(mageTowerCost * 1.4);
-          critMultiplier += 0.1;
-          if(!muteSound) upgradeSound.play();
-          showNotification("Mage Tower built! Critical multiplier increased.", 2000);
-          updateDisplays();
-        } else { showNotification("Not enough gold for Mage Tower!"); }
-      });
-      document.getElementById("buyBarracks").addEventListener("click", function() {
-        if(gold >= barracksCost) {
-          gold -= barracksCost;
-          barracksOwned++;
-          barracksCost = Math.floor(barracksCost * 1.25);
-          hero.attack += 3;
-          if(!muteSound) upgradeSound.play();
-          showNotification("Barracks acquired! +3 attack per Barracks.", 2000);
-          updateDisplays();
-        } else { showNotification("Not enough gold for Barracks!"); }
-      });
-      document.getElementById("buyMarketplace").addEventListener("click", function() {
-        if(gold >= marketplaceCost) {
-          gold -= marketplaceCost;
-          marketplaceOwned++;
-          marketplaceCost = Math.floor(marketplaceCost * 1.3);
-          if(!muteSound) upgradeSound.play();
-          showNotification("Marketplace acquired! Passive income boosted.", 2000);
-          updateDisplays();
-        } else { showNotification("Not enough gold for Marketplace!"); }
-      });
-      document.getElementById("buyCastle").addEventListener("click", function() {
-        if(gold >= castleCost) {
-          gold -= castleCost;
-          castleOwned++;
-          castleCost = Math.floor(castleCost * 1.4);
-          bonusMultiplier += 0.2;
-          if(!muteSound) upgradeSound.play();
-          showNotification("Castle built! Gold multiplier increased.", 2000);
-          updateDisplays();
-        } else { showNotification("Not enough gold for Castle!"); }
-      });
-      healButton.addEventListener("click", function() {
-        if(gold >= healCost) {
-          gold -= healCost;
-          hero.health = Math.min(hero.health + healAmount, hero.maxHealth);
-          showNotification("Healed for " + healAmount + " HP!");
-          updateDisplays();
-        } else { showNotification("Not enough gold to heal!"); }
-      });
-      setInterval(function() {
-        let income = goldMineOwned * currentGoldMultiplier() * getPassiveIncomeMultiplier() * temporaryGoldBonus;
-        gold += income;
-        totalGoldEarned += income;
-        updateDisplays();
-      }, 1000);
-      attackButton.addEventListener("click", function() {
-        if(enemy.currentHP > 0) {
-          const currentTime = Date.now();
-          if(currentTime - lastAttackTime < 2000) {
-            comboMultiplier += 0.1;
-          } else {
-            comboMultiplier = 1;
-          }
-          lastAttackTime = currentTime;
-          let damage = hero.attack * comboMultiplier;
-          if(enemy.type === "Agile" && Math.random() < enemy.dodgeChance) {
-            showNotification("Enemy dodged your attack!");
-          } else {
-            enemy.currentHP -= damage;
-            if(comboMultiplier > 1) {
-              showNotification("Combo x" + comboMultiplier.toFixed(1) + " for " + Math.floor(damage) + " damage!");
-            }
-          }
-          if(enemy.currentHP > 0 && Math.random() < 0.2) {
-            let counterDmg = enemy.counterDamage;
-            hero.health -= counterDmg;
-            showNotification("Enemy counterattacked for " + counterDmg + " damage!");
-            if(hero.health <= 0) {
-              hero.health = 0;
-              showNotification("You died! Prestige to reset.", 4000);
-              attackButton.disabled = true;
-              specialAttackButton.disabled = true;
-              totalBattlesWon++;
-              return;
-            }
-          }
-          if(enemy.currentHP <= 0) {
-            if(!muteSound) enemyDefeatedSound.play();
-            enemyDefeatedCount++;
-            totalBattlesWon++;
-            if(enemy.type === "Boss") relics++;
-            gold += enemy.rewardGold * currentGoldMultiplier() * temporaryGoldBonus;
-            hero.xp += enemy.rewardXP;
-            showNotification("Enemy defeated! Gained " + Math.floor(enemy.rewardGold * currentGoldMultiplier() * temporaryGoldBonus) + " Gold and " + enemy.rewardXP + " XP!");
-            spawnEnemy();
-            checkLevelUp();
-          }
-          updateDisplays();
-          checkQuests();
-          checkAchievements();
-        } else { showNotification("Spawn an enemy first!"); }
-      });
-      specialAttackButton.addEventListener("click", function() {
-        if(!specialAvailable) { showNotification("Special Attack is on cooldown!"); return; }
-        if(enemy.type === "Agile" && Math.random() < enemy.dodgeChance/2) {
-          showNotification("Enemy evaded your Special Attack!");
-        } else {
-          enemy.currentHP -= hero.attack * 3;
-          specialAttackCount++;
-          showNotification("Special Attack dealt " + (hero.attack * 3) + " damage!");
-        }
-        if(enemy.currentHP <= 0) {
-          if(!muteSound) enemyDefeatedSound.play();
-          enemyDefeatedCount++;
-          gold += enemy.rewardGold * currentGoldMultiplier() * temporaryGoldBonus;
-          hero.xp += enemy.rewardXP;
-          showNotification("Enemy defeated with Special Attack! Gained " + Math.floor(enemy.rewardGold * currentGoldMultiplier() * temporaryGoldBonus) + " Gold and " + enemy.rewardXP + " XP!");
-          spawnEnemy();
-          checkLevelUp();
-        }
-        updateDisplays();
-        specialAvailable = false;
-        specialAttackButton.disabled = true;
-        specialCooldownRemaining = specialCooldownTime;
-      });
-      setInterval(function(){
-        if(!specialAvailable && specialCooldownRemaining > 0) {
-          specialCooldownRemaining--;
-          if(specialCooldownRemaining <= 0) {
-            specialAvailable = true;
-            specialAttackButton.disabled = false;
-          }
-        }
-      }, 1000);
-      spawnEnemyButton.addEventListener("click", spawnEnemy);
-      // -------------------------
-      // PRESTIGE & REINCARNATION
-      // -------------------------
-      prestigeButton.addEventListener("click", function() {
-        if(hero.level < 10) { showNotification("You need to be at least Level 10 to Prestige!"); return; }
-        prestigeLevel++;
-        prestigePoints++;
-        showNotification("Prestige Activated! Gold Multiplier is now " + currentGoldMultiplier().toFixed(1) + "x", 3000);
-        if(gold > highScore) highScore = gold;
-        leaderboard.push({ name: "Hero", score: gold });
-        gold = 0; goldPerClick = 1; goldMineOwned = 0; goldMineCost = 10; clickUpgradeCost = 25;
-        critChance = 0.10; critMultiplier = 2; critUpgradeCost = 50;
-        autoClickerOwned = 0; autoClickerCost = 50;
-        blacksmithLevel = 0; blacksmithCost = 100;
-        guildLevel = 0; guildCost = 100;
-        mageTowerLevel = 0; mageTowerCost = 150;
-        barracksOwned = 0; barracksCost = 200;
-        marketplaceOwned = 0; marketplaceCost = 300;
-        castleOwned = 0; castleCost = 500;
-        hero = { level: 1, xp: 0, xpNeeded: 50, attack: 1, health: 100, maxHealth: 100 };
-        spawnEnemy();
-        updateDisplays();
-        prestigeButton.disabled = true;
-        attackButton.disabled = false;
-        specialAttackButton.disabled = false;
-        logEvent("Prestige activated!");
-        updateReincarnation();
-      });
-      buyPrestigeUpgradeButton.addEventListener("click", function() {
-        if(prestigePoints > 0) {
-          prestigePoints--;
-          bonusMultiplier += 0.2;
-          if(!muteSound) upgradeSound.play();
-          showNotification("Divine Blessing purchased! Bonus multiplier increased.", 2500);
-          updateDisplays();
-        } else {
-          showNotification("Not enough Prestige Points!");
-        }
-      });
-      // -------------------------
-      // STATISTICS & EVENT LOG UPDATES
-      // -------------------------
-      setInterval(() => { checkQuests(); checkAchievements(); }, 2000);
-      function updateLeaderboard() {
-        leaderboardListElem.innerHTML = "";
-        let sorted = leaderboard.sort((a,b) => b.score - a.score).slice(0, 5);
-        sorted.forEach(entry => {
-          const li = document.createElement("li");
-          li.textContent = entry.name + ": " + Math.floor(entry.score);
-          leaderboardListElem.appendChild(li);
-        });
-      }
-      // -------------------------
-      // SETTINGS & TUTORIAL FUNCTIONS
-      // -------------------------
-      settingsButton.addEventListener("click", function() {
-        settingsModal.style.display = "block";
-        musicVolumeSlider.value = musicVolume;
-        sfxVolumeSlider.value = sfxVolume;
-        muteToggle.checked = muteSound;
-        difficultySelect.value = difficultyMultiplier;
-        challengeModeToggle.checked = challengeMode;
-      });
-      closeSettings.addEventListener("click", function() {
-        difficultyMultiplier = parseFloat(difficultySelect.value);
-        challengeMode = challengeModeToggle.checked;
-        settingsModal.style.display = "none";
-        showNotification("Settings updated.");
-      });
-      musicVolumeSlider.addEventListener("input", function() {
-        musicVolume = parseFloat(this.value);
-        backgroundMusic.volume = musicVolume;
-      });
-      sfxVolumeSlider.addEventListener("input", function() {
-        sfxVolume = parseFloat(this.value);
-      });
-      muteToggle.addEventListener("change", function() {
-        muteSound = this.checked;
-        if(muteSound) {
-          backgroundMusic.pause();
-        } else {
-          backgroundMusic.play();
-        }
-      });
-      shareScoreButton.addEventListener("click", function() {
-        if(navigator.share) {
-          navigator.share({
-            title: "Medieval Idle Adventure",
-            text: "My high score is " + highScore + " gold and " + relics + " relics!",
-          }).then(() => console.log("Score shared!"))
-            .catch(err => console.error("Error sharing:", err));
-        } else {
-          showNotification("Sharing not supported on this browser.");
-        }
-      });
-      dismissTutorial.addEventListener("click", function() {
-        tutorialOverlay.style.display = "none";
-        localStorage.setItem("tutorialSeen", "true");
-        backgroundMusic.play().catch(err => console.log("Music play error:", err));
-      });
-      // -------------------------
-      // MINI‑GAME FUNCTIONS
-      // -------------------------
-      startMiniGameButton.addEventListener("click", function() {
-        miniGameClicks = 0;
-        miniGameTimeLeft = 10;
-        document.getElementById("miniGameClicks").textContent = miniGameClicks;
-        document.getElementById("miniGameTimer").textContent = "Time left: 10s";
-        miniGameModal.style.display = "block";
-        endMiniGameButton.style.display = "none";
-        miniGameInterval = setInterval(() => {
-          miniGameTimeLeft--;
-          document.getElementById("miniGameTimer").textContent = "Time left: " + miniGameTimeLeft + "s";
-          if(miniGameTimeLeft <= 0) {
-            clearInterval(miniGameInterval);
-            endMiniGame();
-          }
-        }, 1000);
-      });
-      miniGameButton.addEventListener("click", function() {
-        miniGameClicks++;
-        document.getElementById("miniGameClicks").textContent = miniGameClicks;
-      });
-      endMiniGameButton.addEventListener("click", function() {
-        endMiniGame();
-      });
-      function endMiniGame() {
-        clearInterval(miniGameInterval);
-        miniGameModal.style.display = "none";
-        let bonusGold = miniGameClicks * 10;
-        gold += bonusGold;
-        showNotification("Mini‑Game complete! You earned " + bonusGold + " bonus gold!");
-        addToStatistics(bonusGold, miniGameClicks);
-        updateDisplays();
-      }
+      setInterval(() => { if(Math.random() < 0.2) triggerRandomEvent(); }, 60000);
       // -------------------------
       // ENEMY SPAWNING
       // -------------------------
@@ -2360,7 +1184,7 @@
         }
       });
       // -------------------------
-      // AUTO CLICKER LOOP
+      // AUTO CLICKER LOOP (dynamic interval)
       // -------------------------
       function autoClickerLoop() {
         setTimeout(function() {
@@ -2374,7 +1198,7 @@
         }, autoClickInterval);
       }
       // -------------------------
-      // GAME LOOP
+      // GAME LOOP (enemy regen, special bar, etc.)
       // -------------------------
       function gameLoop() {
         updateSpecialCooldownBar();
@@ -2472,6 +1296,7 @@
           updateDisplays();
         } else { showNotification("Not enough gold for Mage Tower!"); }
       });
+      // New Buildings
       document.getElementById("buyBarracks").addEventListener("click", function() {
         if(gold >= barracksCost) {
           gold -= barracksCost;
@@ -2651,57 +1476,65 @@
         });
       }
       // -------------------------
-      // SETTINGS & TUTORIAL FUNCTIONS
+      // SKILL TREE UPDATE (Sequential Unlocking)
       // -------------------------
-      settingsButton.addEventListener("click", function() {
-        settingsModal.style.display = "block";
-        musicVolumeSlider.value = musicVolume;
-        sfxVolumeSlider.value = sfxVolume;
-        muteToggle.checked = muteSound;
-        difficultySelect.value = difficultyMultiplier;
-        challengeModeToggle.checked = challengeMode;
-      });
-      closeSettings.addEventListener("click", function() {
-        difficultyMultiplier = parseFloat(difficultySelect.value);
-        challengeMode = challengeModeToggle.checked;
-        settingsModal.style.display = "none";
-        showNotification("Settings updated.");
-      });
-      musicVolumeSlider.addEventListener("input", function() {
-        musicVolume = parseFloat(this.value);
-        backgroundMusic.volume = musicVolume;
-      });
-      sfxVolumeSlider.addEventListener("input", function() {
-        sfxVolume = parseFloat(this.value);
-      });
-      muteToggle.addEventListener("change", function() {
-        muteSound = this.checked;
-        if(muteSound) {
-          backgroundMusic.pause();
-        } else {
-          backgroundMusic.play();
+      function updateSkillTree() {
+        const lis = document.querySelectorAll("#skillList li");
+        for (let i = 0; i < skillOrder.length; i++) {
+          const skillId = skillOrder[i];
+          const li = Array.from(lis).find(item => item.getAttribute("data-id") === skillId);
+          if(li) {
+            li.style.display = (i === 0 || (skills[skillOrder[i-1]] && skills[skillOrder[i-1]].purchased)) ? "list-item" : "none";
+          }
         }
+      }
+      document.querySelectorAll(".buySkillBtn").forEach(btn => {
+        btn.addEventListener("click", function(e) {
+          const li = e.target.parentElement;
+          const skillId = li.getAttribute("data-id");
+          if(skills[skillId].purchased) {
+            showNotification("Skill already purchased!");
+            return;
+          }
+          if(gold >= skills[skillId].cost) {
+            gold -= skills[skillId].cost;
+            skills[skillId].purchased = true;
+            skills[skillId].effect();
+            li.style.textDecoration = "line-through";
+            showNotification("Skill purchased: " + li.textContent, 2000);
+            updateDisplays();
+          } else {
+            showNotification("Not enough gold for this skill!");
+          }
+        });
       });
-      shareScoreButton.addEventListener("click", function() {
-        if(navigator.share) {
-          navigator.share({
-            title: "Medieval Idle Adventure",
-            text: "My high score is " + highScore + " gold and " + relics + " relics!",
-          }).then(() => console.log("Score shared!"))
-            .catch(err => console.error("Error sharing:", err));
-        } else {
-          showNotification("Sharing not supported on this browser.");
+      // -------------------------
+      // REINCARNATION (New)
+      // -------------------------
+      function updateReincarnation() {
+        const container = document.getElementById("reincarnateContainer");
+        container.innerHTML = "";
+        if(prestigeLevel >= 10) {
+          const btn = document.createElement("button");
+          btn.textContent = "Reincarnate";
+          btn.title = "Reincarnate for a permanent bonus (resets prestige)";
+          btn.addEventListener("click", function() {
+            reincarnations++;
+            reincarnationBonus += 0.05;
+            prestigeLevel = 0;
+            prestigePoints = 0;
+            bonusMultiplier = reincarnationBonus;
+            showNotification("Reincarnation complete! Permanent bonus increased.", 3000);
+            updateDisplays();
+            updateReincarnation();
+          });
+          container.appendChild(btn);
         }
-      });
-      dismissTutorial.addEventListener("click", function() {
-        tutorialOverlay.style.display = "none";
-        localStorage.setItem("tutorialSeen", "true");
-        backgroundMusic.play().catch(err => console.log("Music play error:", err));
-      });
+      }
       // -------------------------
       // MINI‑GAME FUNCTIONS
       // -------------------------
-      startMiniGameButton.addEventListener("click", function() {
+      document.getElementById("startMiniGame").addEventListener("click", function() {
         miniGameClicks = 0;
         miniGameTimeLeft = 10;
         document.getElementById("miniGameClicks").textContent = miniGameClicks;
@@ -2733,6 +1566,22 @@
         addToStatistics(bonusGold, miniGameClicks);
         updateDisplays();
       }
+      // -------------------------
+      // RANDOM WORLD EVENTS
+      // -------------------------
+      function triggerRandomEvent() {
+        let r = Math.random();
+        if(r < 0.3) {
+          temporaryGoldBonus = 2;
+          showNotification("Treasure Discovery! Gold earnings doubled for 30s!", 3000);
+          setTimeout(() => { temporaryGoldBonus = 1; updateDisplays(); }, 30000);
+        } else if(r < 0.6) {
+          relics++;
+          showNotification("Ancient Relic Found! You gained 1 relic.", 3000);
+          updateDisplays();
+        }
+      }
+      setInterval(() => { if(Math.random() < 0.2) triggerRandomEvent(); }, 60000);
       // -------------------------
       // ENEMY SPAWNING
       // -------------------------
@@ -2878,7 +1727,7 @@
         }
       });
       // -------------------------
-      // AUTO CLICKER LOOP
+      // AUTO CLICKER LOOP (dynamic interval)
       // -------------------------
       function autoClickerLoop() {
         setTimeout(function() {
@@ -2892,7 +1741,7 @@
         }, autoClickInterval);
       }
       // -------------------------
-      // GAME LOOP
+      // GAME LOOP (animations, enemy regen, etc.)
       // -------------------------
       function gameLoop() {
         updateSpecialCooldownBar();
@@ -3169,6 +2018,39 @@
         });
       }
       // -------------------------
+      // SKILL TREE UPDATE (Sequential Unlocking)
+      // -------------------------
+      function updateSkillTree() {
+        const lis = document.querySelectorAll("#skillList li");
+        for (let i = 0; i < skillOrder.length; i++) {
+          const skillId = skillOrder[i];
+          const li = Array.from(lis).find(item => item.getAttribute("data-id") === skillId);
+          if(li) {
+            li.style.display = (i === 0 || (skills[skillOrder[i-1]] && skills[skillOrder[i-1]].purchased)) ? "list-item" : "none";
+          }
+        }
+      }
+      document.querySelectorAll(".buySkillBtn").forEach(btn => {
+        btn.addEventListener("click", function(e) {
+          const li = e.target.parentElement;
+          const skillId = li.getAttribute("data-id");
+          if(skills[skillId].purchased) {
+            showNotification("Skill already purchased!");
+            return;
+          }
+          if(gold >= skills[skillId].cost) {
+            gold -= skills[skillId].cost;
+            skills[skillId].purchased = true;
+            skills[skillId].effect();
+            li.style.textDecoration = "line-through";
+            showNotification("Skill purchased: " + li.textContent, 2000);
+            updateDisplays();
+          } else {
+            showNotification("Not enough gold for this skill!");
+          }
+        });
+      });
+      // -------------------------
       // SETTINGS & TUTORIAL FUNCTIONS
       // -------------------------
       settingsButton.addEventListener("click", function() {
@@ -3216,6 +2098,93 @@
         localStorage.setItem("tutorialSeen", "true");
         backgroundMusic.play().catch(err => console.log("Music play error:", err));
       });
+      // -------------------------
+      // MINI‑GAME FUNCTIONS
+      // -------------------------
+      document.getElementById("startMiniGame").addEventListener("click", function() {
+        miniGameClicks = 0;
+        miniGameTimeLeft = 10;
+        document.getElementById("miniGameClicks").textContent = miniGameClicks;
+        document.getElementById("miniGameTimer").textContent = "Time left: 10s";
+        miniGameModal.style.display = "block";
+        endMiniGameButton.style.display = "none";
+        miniGameInterval = setInterval(() => {
+          miniGameTimeLeft--;
+          document.getElementById("miniGameTimer").textContent = "Time left: " + miniGameTimeLeft + "s";
+          if(miniGameTimeLeft <= 0) {
+            clearInterval(miniGameInterval);
+            endMiniGame();
+          }
+        }, 1000);
+      });
+      miniGameButton.addEventListener("click", function() {
+        miniGameClicks++;
+        document.getElementById("miniGameClicks").textContent = miniGameClicks;
+      });
+      endMiniGameButton.addEventListener("click", function() {
+        endMiniGame();
+      });
+      function endMiniGame() {
+        clearInterval(miniGameInterval);
+        miniGameModal.style.display = "none";
+        let bonusGold = miniGameClicks * 10;
+        gold += bonusGold;
+        showNotification("Mini‑Game complete! You earned " + bonusGold + " bonus gold!");
+        addToStatistics(bonusGold, miniGameClicks);
+        updateDisplays();
+      }
+      // -------------------------
+      // END OF EVENT LISTENERS
+      // -------------------------
+      
+      // -------------------------
+      // DYNAMIC EXTRA CONTENT: 92 extra skills and 92 extra achievements
+      // -------------------------
+      for (let i = 1; i <= 92; i++) {
+        // Extra Skill: each increases gold per click by 1 and passive boost by 0.01.
+        let skillId = "extraSkill" + i;
+        skills[skillId] = {
+          purchased: false,
+          cost: 500 + i * 50,
+          effect: function() {
+            goldPerClick += 1;
+            passiveBoost += 0.01;
+          }
+        };
+        baseSkillOrder.push(skillId);
+        // Also add a new <li> element for this skill in the skill tree list.
+        const li = document.createElement("li");
+        li.setAttribute("data-id", skillId);
+        li.innerHTML = "Extra Skill " + i + " (Increase gold per click by 1 & passive boost +0.01) – Cost: " + (500 + i * 50) + " Gold <button class='buySkillBtn' title='Buy Extra Skill " + i + "'>Buy</button>";
+        skillListElem.appendChild(li);
+      }
+      for (let i = 1; i <= 92; i++) {
+        // Extra Achievement: unlock when total gold earned exceeds 1000 * i.
+        achievements.push({
+          id: achievements.length + 1,
+          desc: "Extra Achievement " + i,
+          condition: function() { return totalGoldEarned >= 1000 * i; },
+          awarded: false
+        });
+      }
+      
+      // -------------------------
+      // RANDOM WORLD EVENTS (same as before)
+      // -------------------------
+      function triggerRandomEvent() {
+        let r = Math.random();
+        if(r < 0.3) {
+          temporaryGoldBonus = 2;
+          showNotification("Treasure Discovery! Gold earnings doubled for 30s!", 3000);
+          setTimeout(() => { temporaryGoldBonus = 1; updateDisplays(); }, 30000);
+        } else if(r < 0.6) {
+          relics++;
+          showNotification("Ancient Relic Found! You gained 1 relic.", 3000);
+          updateDisplays();
+        }
+      }
+      setInterval(() => { if(Math.random() < 0.2) triggerRandomEvent(); }, 60000);
+      
       // -------------------------
       // END OF SCRIPT
     })();
