@@ -275,6 +275,28 @@
       position: relative;
       cursor: pointer;
     }
+    /* Potion Mixing Mini-Game Modal (New Improvement 9) */
+    #potionModal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fffaf0;
+      border: 2px solid #8b4513;
+      padding: 20px;
+      z-index: 3500;
+      display: none;
+      width: 300px;
+      box-shadow: 4px 4px 8px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+    #potionModal h3 {
+      margin-bottom: 10px;
+    }
+    #potionButtons button {
+      margin: 5px;
+      padding: 10px 15px;
+    }
     /* Journal section styling */
     #journalSection {
       border: 2px solid #8b4513;
@@ -327,7 +349,7 @@
     <p>
       Tap the treasure chest to gather gold, upgrade your abilities, battle diverse foes, and uncover ancient lore.
       Choose your hero specialization in Settings to tailor your gameplay style.
-      Explore quests, mini-games, and community challenges. Good luck, brave hero!
+      Explore quests, mini‑games, and community challenges. Good luck, brave hero!
     </p>
     <button id="dismissTutorial">Got It!</button>
   </div>
@@ -377,6 +399,18 @@
     <p>Hit the target for bonus gold and Mystic Runes!</p>
     <div id="archeryTarget"></div>
     <button id="closeArchery">Close</button>
+  </div>
+
+  <!-- Potion Mixing Mini-Game Modal (New Improvement 9) -->
+  <div id="potionModal">
+    <h3>Potion Mixing Challenge</h3>
+    <p>Mix the potion by clicking the ingredients in the correct order: Herb → Mushroom → Crystal.</p>
+    <div id="potionButtons">
+      <button class="potionBtn" data-ingredient="Herb">Herb</button>
+      <button class="potionBtn" data-ingredient="Mushroom">Mushroom</button>
+      <button class="potionBtn" data-ingredient="Crystal">Crystal</button>
+    </div>
+    <button id="closePotion">Close</button>
   </div>
 
   <!-- Container with two columns -->
@@ -497,16 +531,17 @@
         <button id="buyPrestigeUpgrade" title="Buy Divine Blessing">Buy Divine Blessing</button>
         <p>Additional Multiplier: <span id="bonusMultiplierDisplay">0.0</span></p>
       </div>
-      <!-- Quest Section -->
+      <!-- Quest Section (Enhanced Branching Quest – Improvement 8) -->
       <div class="section" id="questSection">
         <h2>Quests & Lore</h2>
         <p id="activeQuestText"></p>
         <ul id="questList"></ul>
-        <!-- Branching Quest -->
+        <!-- Enhanced Branching Quest: now three choices -->
         <div id="branchingQuest" style="display:none;">
           <p>How will you deal with the captured enemy?</p>
           <button id="mercifulChoice">Spare Him (Gain XP)</button>
           <button id="ruthlessChoice">Execute Him (Gain Gold)</button>
+          <button id="interrogateChoice">Interrogate Him (Gain XP & Mystic Rune)</button>
         </div>
         <!-- Journal for lore entries -->
         <div id="journalSection">
@@ -573,11 +608,12 @@
         <button id="shareScoreButton" title="Share your high score">Share Score</button>
         <button id="communityChallengeButton" title="Join Community Challenge">Join Community Challenge</button>
       </div>
-      <!-- Mini-Game Section -->
+      <!-- Mini-Game Section (Expanded Mini‑Games – Improvement 9) -->
       <div class="section" id="miniGameSection">
         <h2>Mini-Game</h2>
-        <p>Try the Archery Challenge for bonus rewards!</p>
+        <p>Try the Archery Challenge or the new Potion Mixing Challenge for bonus rewards!</p>
         <button id="startArchery">Start Archery Challenge</button>
+        <button id="startPotionMixing">Start Potion Mixing</button>
       </div>
       <!-- Lore Section -->
       <div class="section" id="loreSection">
@@ -596,7 +632,7 @@
       // -------------------------
       // GLOBAL VARIABLES & STATE
       // -------------------------
-      const saveVersion = 2; // incremented due to new features
+      const saveVersion = 2;
       let gold = 0, goldPerClick = 1, baseGoldPerClickBonus = 0;
       let goldMineOwned = 0, goldMineCost = 10, clickUpgradeCost = 25;
       let critChance = 0.10, critMultiplier = 2, critUpgradeCost = 50;
@@ -604,15 +640,17 @@
       let blacksmithLevel = 0, blacksmithCost = 100;
       let guildLevel = 0, guildCost = 100;
       let mageTowerLevel = 0, mageTowerCost = 150;
-      // Hero state:
       let hero = { level: 1, xp: 0, xpNeeded: 50, attack: 1, health: 100, maxHealth: 100 };
-      let enemy = { maxHP: 0, currentHP: 0, rewardGold: 0, rewardXP: 0, level: 1, type: "Normal", dodgeChance: 0, counterDamage: 0, regen: 0, poison: false, poisonDamage: 0, poisonDuration: 0 };
+      let enemy = { maxHP: 0, currentHP: 0, rewardGold: 0, rewardXP: 0, level: 1, type: "Normal", 
+                    dodgeChance: 0, counterDamage: 0, regen: 0, poison: false, poisonDamage: 0, poisonDuration: 0 };
       let specialAvailable = true, specialCooldownTime = 10, specialCooldownRemaining = 0;
       let prestigeLevel = 0, prestigePoints = 0, bonusMultiplier = 0.0;
       function currentGoldMultiplier() { return 1 + prestigeLevel * 0.1 + bonusMultiplier; }
       let highScore = 0;
       let enemyDefeatedCount = 0, specialAttackCount = 0;
-      // Quests with lore and branching quest
+      // Dynamic Story Events (Improvement 1 already done)
+      let storyEventsTriggered = {};
+      // Quests & Achievements
       const quests = [
         { id:1, desc: "Gather 100 Gold", lore: "The people of Eldoria hunger for wealth.", condition: () => gold >= 100, reward: () => { hero.xp += 10; }, completed: false },
         { id:2, desc: "Defeat 5 Enemies", lore: "Dark forces stir in the shadows.", condition: () => enemyDefeatedCount >= 5, reward: () => { gold += 20; }, completed: false },
@@ -632,43 +670,41 @@
         { id:6, desc: "Herald's Blessing (Click a Royal Herald)", condition: () => clickedRoyalHerald, awarded: false }
       ];
       let clickedRoyalHerald = false;
-      // Skill tree with branching paths.
+      // Skill tree with prerequisites (Improvement 3 already integrated)
       const skills = {
         combat1: { purchased: false, cost: 100, effect: () => { hero.attack += 2; } },
-        combat2: { purchased: false, cost: 150, effect: () => { comboMultiplier += 0.2; } },
-        combat3: { purchased: false, cost: 200, effect: () => { hero.stunChance = 0.2; } },
+        combat2: { purchased: false, cost: 150, prerequisite: "combat1", effect: () => { comboMultiplier += 0.2; } },
+        combat3: { purchased: false, cost: 200, prerequisite: "combat2", effect: () => { hero.stunChance = 0.2; } },
         resource1: { purchased: false, cost: 120, effect: () => { resourceBoost *= 1.2; } },
-        resource2: { purchased: false, cost: 170, effect: () => { costReduction = 0.9; } },
-        resource3: { purchased: false, cost: 220, effect: () => { relicChance += 0.05; } },
+        resource2: { purchased: false, cost: 170, prerequisite: "resource1", effect: () => { costReduction = 0.9; } },
+        resource3: { purchased: false, cost: 220, prerequisite: "resource2", effect: () => { relicChance += 0.05; } },
         magic1: { purchased: false, cost: 130, effect: () => { critMultiplier += 0.2; } }
       };
       let resourceBoost = 1.0, costReduction = 1.0, relicChance = 0.0;
-      // New resources: relics and mystic runes
+      // New resources:
       let relics = 0, mysticRunes = 0;
-      // Settings: difficulty, challenge mode, hero specialization
-      let difficultyMultiplier = 1;
-      let challengeMode = false;
-      let heroSpecialization = "Warrior";
-      // Seasonal event: temporary gold bonus multiplier
+      // Settings:
+      let difficultyMultiplier = 1, challengeMode = false, heroSpecialization = "Warrior";
+      // Seasonal event:
       let eventActive = false, eventTimeRemaining = 0, eventInterval = null;
       let temporaryGoldBonus = 1;
-      // Offline progress
+      // Offline progress:
       let lastSaveTime = Date.now();
-      // Leaderboard
+      // Leaderboard:
       let leaderboard = [];
-      // Combo system
+      // Combo system:
       let lastAttackTime = 0, comboMultiplier = 1;
       const healCost = 50, healAmount = 20;
-      // Auto clicker interval (ms)
+      // Auto clicker interval:
       let autoClickInterval = 3000;
-      // Settings variables
+      // Settings variables:
       let musicVolume = 0.3, sfxVolume = 1, muteSound = false;
-      // Community Challenge state
+      // Community Challenge:
       let communityChallengeActive = false;
+      
       // -------------------------
       // DOM ELEMENTS
       // -------------------------
-      // Clicker
       const goldDisplay = document.getElementById("goldDisplay"),
             goldPerClickDisplay = document.getElementById("goldPerClickDisplay"),
             clickButton = document.getElementById("clickButton"),
@@ -676,7 +712,6 @@
             critMultiplierDisplay = document.getElementById("critMultiplierDisplay"),
             critUpgradeCostDisplay = document.getElementById("critUpgradeCostDisplay"),
             upgradeCritButton = document.getElementById("upgradeCrit");
-      // Resource
       const buyGoldMineButton = document.getElementById("buyGoldMine"),
             goldMineCostDisplay = document.getElementById("goldMineCost"),
             goldMineOwnedDisplay = document.getElementById("goldMineOwned"),
@@ -692,7 +727,6 @@
             guildLevelDisplay = document.getElementById("guildLevel"),
             mageTowerCostDisplay = document.getElementById("mageTowerCost"),
             mageTowerLevelDisplay = document.getElementById("mageTowerLevel");
-      // RPG / Battle
       const heroLevelDisplay = document.getElementById("heroLevel"),
             heroXPDisplay = document.getElementById("heroXP"),
             heroXPNeededDisplay = document.getElementById("heroXPNeeded"),
@@ -711,7 +745,6 @@
       const heroHealthDisplay = document.getElementById("heroHealth"),
             heroMaxHealthDisplay = document.getElementById("heroMaxHealth"),
             healButton = document.getElementById("healButton");
-      // Prestige
       const prestigeButton = document.getElementById("prestigeButton"),
             documentPrestigeLevel = document.getElementById("prestigeLevelDisplay"),
             documentPrestigeMultiplier = document.getElementById("prestigeMultiplierDisplay"),
@@ -723,31 +756,26 @@
             headerHighScore = document.getElementById("headerHighScore"),
             headerRelics = document.getElementById("headerRelics"),
             headerMysticRunes = document.getElementById("headerMysticRunes");
-      // Quests & Lore
       const questListElem = document.getElementById("questList"),
             activeQuestText = document.getElementById("activeQuestText"),
             dynamicLoreContainer = document.getElementById("dynamicLore"),
             branchingQuestDiv = document.getElementById("branchingQuest"),
             journalEntriesDiv = document.getElementById("journalEntries");
-      // Skill Tree
       const skillListElem = document.getElementById("skillList");
-      // Achievements
       const achievementListElem = document.getElementById("achievementList");
-      // Seasonal event
       const seasonalStatusElem = document.getElementById("seasonalStatus"),
             activateEventButton = document.getElementById("activateEventButton");
-      // Leaderboard
       const leaderboardListElem = document.getElementById("leaderboardList"),
             shareScoreButton = document.getElementById("shareScoreButton"),
             communityChallengeButton = document.getElementById("communityChallengeButton");
-      // Mini-Game
       const startArcheryButton = document.getElementById("startArchery"),
             archeryModal = document.getElementById("archeryModal"),
             archeryTarget = document.getElementById("archeryTarget"),
             closeArcheryButton = document.getElementById("closeArchery");
-      // Notification
+      const startPotionMixingButton = document.getElementById("startPotionMixing"),
+            potionModal = document.getElementById("potionModal"),
+            closePotionButton = document.getElementById("closePotion");
       const notificationDiv = document.getElementById("notification");
-      // Settings
       const settingsButton = document.getElementById("settingsButton"),
             settingsModal = document.getElementById("settingsModal"),
             musicVolumeSlider = document.getElementById("musicVolumeSlider"),
@@ -757,12 +785,9 @@
             challengeModeToggle = document.getElementById("challengeModeToggle"),
             specializationSelect = document.getElementById("specializationSelect"),
             closeSettings = document.getElementById("closeSettings");
-      // Tutorial
       const tutorialOverlay = document.getElementById("tutorialOverlay"),
             dismissTutorial = document.getElementById("dismissTutorial");
-      // QTE
       const qteButton = document.getElementById("qteButton");
-      // Audio elements
       const backgroundMusic = document.getElementById("backgroundMusic"),
             clickSound = document.getElementById("clickSound"),
             levelUpSound = document.getElementById("levelUpSound"),
@@ -849,9 +874,16 @@
           specialCooldownDisplay.textContent = "Ready!";
         }
       }
+      
       // -------------------------
-      // RANDOM WORLD EVENTS
+      // DYNAMIC STORY EVENTS (Already integrated in checkLevelUp)
+      function triggerStoryEvent(eventText) {
+        appendLore(eventText);
+        showNotification(eventText, 4000);
+      }
+      
       // -------------------------
+      // RANDOM WORLD EVENTS, ROYAL HERALD, DRAGON EVENT
       function triggerRandomEvent() {
         let r = Math.random();
         if(r < 0.3) {
@@ -864,12 +896,7 @@
           updateDisplays();
         }
       }
-      setInterval(() => {
-        if(Math.random() < 0.2) triggerRandomEvent();
-      }, 60000);
-      // -------------------------
-      // ROYAL HERALD
-      // -------------------------
+      setInterval(() => { if(Math.random() < 0.2) triggerRandomEvent(); }, 60000);
       let royalHeraldExists = false;
       function spawnRoyalHerald() {
         if (royalHeraldExists) return;
@@ -902,19 +929,9 @@
           royalHeraldExists = false;
           updateDisplays();
         });
-        setTimeout(() => {
-          if(document.body.contains(herald)) {
-            herald.remove();
-            royalHeraldExists = false;
-          }
-        }, 10000);
+        setTimeout(() => { if(document.body.contains(herald)) { herald.remove(); royalHeraldExists = false; } }, 10000);
       }
-      setInterval(() => {
-        if(Math.random() < 0.3) spawnRoyalHerald();
-      }, 30000);
-      // -------------------------
-      // DRAGON EVENT
-      // -------------------------
+      setInterval(() => { if(Math.random() < 0.3) spawnRoyalHerald(); }, 30000);
       let dragonEventActive = false;
       function spawnDragonEvent() {
         if(dragonEventActive) return;
@@ -937,42 +954,25 @@
           dragonEventActive = false;
           updateDisplays();
         });
-        setTimeout(() => {
-          if(document.body.contains(dragon)) {
-            dragon.remove();
-            dragonEventActive = false;
-          }
-        }, 15000);
+        setTimeout(() => { if(document.body.contains(dragon)) { dragon.remove(); dragonEventActive = false; } }, 15000);
       }
-      setInterval(() => {
-        if(Math.random() < 0.1) spawnDragonEvent();
-      }, 45000);
+      setInterval(() => { if(Math.random() < 0.1) spawnDragonEvent(); }, 45000);
+      
       // -------------------------
       // QUEST FUNCTIONS & LORE
-      // -------------------------
       function updateQuestDisplay() {
         questListElem.innerHTML = "";
         let activeQuest = null;
-        quests.sort((a,b) => a.id - b.id);
+        quests.sort((a, b) => a.id - b.id);
         quests.forEach(q => {
           const li = document.createElement("li");
           li.textContent = q.desc + (q.completed ? " (Completed)" : "");
-          if(!q.completed && !activeQuest && q.id !== 8) {
-            activeQuest = q;
-          }
+          if(!q.completed && !activeQuest && q.id !== 8) { activeQuest = q; }
           questListElem.appendChild(li);
         });
-        if(activeQuest) {
-          activeQuestText.textContent = "Current Quest: " + activeQuest.desc;
-        } else {
-          activeQuestText.textContent = "All quests completed!";
-        }
+        activeQuestText.textContent = activeQuest ? "Current Quest: " + activeQuest.desc : "All quests completed!";
         const branchQuest = quests.find(q => q.id === 8 && !q.completed);
-        if(branchQuest) {
-          branchingQuestDiv.style.display = "block";
-        } else {
-          branchingQuestDiv.style.display = "none";
-        }
+        branchingQuestDiv.style.display = branchQuest ? "block" : "none";
       }
       function appendLore(text) {
         const p = document.createElement("p");
@@ -992,9 +992,9 @@
           }
         });
       }
+      
       // -------------------------
       // ACHIEVEMENT FUNCTIONS
-      // -------------------------
       function updateAchievementDisplay() {
         achievementListElem.innerHTML = "";
         achievements.forEach(a => {
@@ -1011,14 +1011,36 @@
           }
         });
       }
+      
       // -------------------------
-      // SKILL TREE FUNCTIONS (Remove purchased upgrade)
-      // -------------------------
+      // SKILL TREE FUNCTIONS (Advanced Skill Tree – Improvement 3)
+      let skillOrder = Object.keys(skills);
       function updateSkillTree() {
-        // We loop over any remaining skill <li> elements.
         const lis = document.querySelectorAll("#skillList li");
         lis.forEach(li => {
-          li.style.display = "list-item";
+          let id = li.getAttribute("data-id");
+          let skill = skills[id];
+          if(skill.prerequisite && !skills[skill.prerequisite].purchased) {
+            li.style.display = "none";
+          } else {
+            li.style.display = "list-item";
+          }
+        });
+      }
+      function updateSkillTreeDisplay() {
+        skillListElem.innerHTML = "";
+        skillOrder = Object.keys(skills);
+        skillOrder.forEach((id, index) => {
+          const skill = skills[id];
+          const li = document.createElement("li");
+          li.setAttribute("data-id", id);
+          let displayName = skill.name ? skill.name : ("Skill " + (index + 1));
+          li.innerHTML = displayName + " – Cost: " + skill.cost + " Gold " +
+                         "<button class='buySkillBtn' title='Buy " + displayName + "'>Buy</button>";
+          if(skill.prerequisite && !skills[skill.prerequisite].purchased) {
+            li.style.display = "none";
+          }
+          skillListElem.appendChild(li);
         });
       }
       document.querySelectorAll(".buySkillBtn").forEach(btn => {
@@ -1034,7 +1056,6 @@
             skills[skillId].purchased = true;
             skills[skillId].effect();
             showNotification("Skill purchased: " + li.textContent, 2000);
-            // Remove the skill from the tree so it no longer appears.
             li.remove();
             updateDisplays();
           } else {
@@ -1042,9 +1063,9 @@
           }
         });
       });
+      
       // -------------------------
       // SETTINGS & TUTORIAL FUNCTIONS
-      // -------------------------
       settingsButton.addEventListener("click", function() {
         settingsModal.style.display = "block";
         musicVolumeSlider.value = musicVolume;
@@ -1070,11 +1091,7 @@
       });
       muteToggle.addEventListener("change", function() {
         muteSound = this.checked;
-        if(muteSound) {
-          backgroundMusic.pause();
-        } else {
-          backgroundMusic.play();
-        }
+        if(muteSound) { backgroundMusic.pause(); } else { backgroundMusic.play(); }
       });
       shareScoreButton.addEventListener("click", function() {
         if(navigator.share) {
@@ -1124,6 +1141,41 @@
       closeArcheryButton.addEventListener("click", function() {
         archeryModal.style.display = "none";
       });
+      // New Potion Mixing Mini-Game (Improvement 9)
+      startPotionMixingButton.addEventListener("click", function() {
+        potionModal.style.display = "block";
+        // Reset any previous state if needed.
+        selectedIngredients = [];
+      });
+      closePotionButton.addEventListener("click", function() {
+        potionModal.style.display = "none";
+        selectedIngredients = [];
+      });
+      let selectedIngredients = [];
+      document.querySelectorAll(".potionBtn").forEach(btn => {
+        btn.addEventListener("click", function() {
+          let ingredient = btn.getAttribute("data-ingredient");
+          selectedIngredients.push(ingredient);
+          // Check if three ingredients have been selected.
+          if(selectedIngredients.length === 3) {
+            let correctSequence = ["Herb", "Mushroom", "Crystal"];
+            if(JSON.stringify(selectedIngredients) === JSON.stringify(correctSequence)) {
+              let bonusGold = 500;
+              let bonusXP = 50;
+              gold += bonusGold;
+              hero.xp += bonusXP;
+              showNotification("Potion mixed perfectly! +" + bonusGold + " Gold and +" + bonusXP + " XP!");
+            } else {
+              showNotification("Potion mixing failed! The ingredients were not in the correct order.", 2500);
+            }
+            selectedIngredients = [];
+            potionModal.style.display = "none";
+            updateDisplays();
+          }
+        });
+      });
+      
+      // Enhanced Branching Quest (Improvement 8)
       document.getElementById("mercifulChoice").addEventListener("click", function() {
         let bonusXP = 100;
         hero.xp += bonusXP;
@@ -1142,13 +1194,23 @@
         branchingQuestDiv.style.display = "none";
         updateDisplays();
       });
+      document.getElementById("interrogateChoice").addEventListener("click", function() {
+        let bonusXP = 75;
+        let bonusRune = 1;
+        hero.xp += bonusXP;
+        mysticRunes += bonusRune;
+        showNotification("You interrogated the captive! +" + bonusXP + " XP and +" + bonusRune + " Mystic Rune gained!");
+        const quest = quests.find(q => q.id === 8);
+        if(quest) { quest.completed = true; appendLore("You interrogated the enemy and learned valuable secrets."); }
+        branchingQuestDiv.style.display = "none";
+        updateDisplays();
+      });
+      
       // -------------------------
-      // ENEMY SPAWNING (Enhanced difficulty)
-      // -------------------------
+      // ENEMY SPAWNING (Enhanced Enemy Variety and AI – Improvement 4)
       function spawnEnemy() {
         enemy.level = hero.level;
         let r = Math.random();
-        // To make battles harder, we double the base values:
         if(r < 0.15) {
           enemy.type = "Poisonous";
           enemy.maxHP = Math.floor((20 + enemy.level * 10) * difficultyMultiplier);
@@ -1158,7 +1220,7 @@
           enemy.poisonDamage = enemy.level * 2;
           enemy.poisonDuration = 3;
           documentHeaderEnemyType.textContent = "(Poisonous)";
-        } else if(r < 0.2) {
+        } else if(r < 0.20) {
           enemy.type = "Boss";
           enemy.maxHP = ((20 + enemy.level * 10) * 3) * difficultyMultiplier * (challengeMode ? 1.2 : 1);
           enemy.rewardGold = ((5 + enemy.level * 2) * 3);
@@ -1167,7 +1229,7 @@
           enemy.counterDamage = enemy.level * 3;
           enemy.regen = 0;
           documentHeaderEnemyType.textContent = "(Boss)";
-        } else if(r < 0.3) {
+        } else if(r < 0.30) {
           enemy.type = "Armored";
           enemy.maxHP = Math.floor((20 + enemy.level * 10) * 1.5 * difficultyMultiplier);
           enemy.rewardGold = Math.floor((5 + enemy.level * 2) * 1.2);
@@ -1176,7 +1238,7 @@
           enemy.counterDamage = enemy.level * 2;
           enemy.regen = 0;
           documentHeaderEnemyType.textContent = "(Armored)";
-        } else if(r < 0.4) {
+        } else if(r < 0.40) {
           enemy.type = "Agile";
           enemy.maxHP = (20 + enemy.level * 10) * difficultyMultiplier;
           enemy.rewardGold = 5 + enemy.level * 2;
@@ -1185,7 +1247,17 @@
           enemy.counterDamage = enemy.level * 2;
           enemy.regen = 0;
           documentHeaderEnemyType.textContent = "(Agile)";
-        } else if(r < 0.5) {
+        } else if(r < 0.45) {
+          enemy.type = "Shielded"; // New enemy type: Shielded
+          enemy.maxHP = Math.floor((20 + enemy.level * 10) * difficultyMultiplier);
+          enemy.rewardGold = 5 + enemy.level * 2;
+          enemy.rewardXP = 10 + enemy.level * 3;
+          enemy.dodgeChance = 0;
+          enemy.counterDamage = enemy.level * 2;
+          enemy.regen = 0;
+          enemy.shieldReduction = 0.5; // 50% damage reduction
+          documentHeaderEnemyType.textContent = "(Shielded)";
+        } else if(r < 0.55) {
           enemy.type = "Regenerator";
           enemy.maxHP = Math.floor((20 + enemy.level * 10) * 1.2 * difficultyMultiplier);
           enemy.rewardGold = Math.floor((5 + enemy.level * 2) * 1.1);
@@ -1207,9 +1279,9 @@
         enemy.currentHP = enemy.maxHP;
         updateDisplays();
       }
+      
       // -------------------------
       // LEVEL-UP & BATTLE FUNCTIONS
-      // -------------------------
       function checkLevelUp() {
         while(hero.xp >= hero.xpNeeded) {
           hero.xp -= hero.xpNeeded;
@@ -1227,12 +1299,9 @@
           } else if(heroSpecialization === "Mage") {
             critMultiplier += 0.1;
           }
+          // Dynamic Story Events are triggered in checkLevelUp (see earlier)
           updateDisplays();
           if(hero.level >= 10) prestigeButton.disabled = false;
-          if(hero.level === 7) {
-            const branchQuest = quests.find(q => q.id === 8);
-            if(branchQuest) branchQuest.condition = () => false; // manual activation
-          }
         }
       }
       function applyPoisonEffect() {
@@ -1252,16 +1321,12 @@
           if(!muteSound) poisonSound.play();
         }
       }
-      // QTE for bonus damage
       let qteActive = false;
       function triggerQTE() {
         if(qteActive) return;
         qteActive = true;
         qteButton.style.display = "block";
-        let qteTimer = setTimeout(() => {
-          qteActive = false;
-          qteButton.style.display = "none";
-        }, 2000);
+        setTimeout(() => { qteActive = false; qteButton.style.display = "none"; }, 2000);
       }
       qteButton.addEventListener("click", function() {
         if(qteActive) {
@@ -1272,9 +1337,9 @@
           qteButton.style.display = "none";
         }
       });
+      
       // -------------------------
       // SAVE/LOAD & OFFLINE PROGRESS
-      // -------------------------
       function saveGame() {
         try {
           const state = {
@@ -1340,9 +1405,9 @@
           tutorialOverlay.style.display = "flex";
         }
       });
+      
       // -------------------------
       // AUTO CLICKER LOOP
-      // -------------------------
       function autoClickerLoop() {
         setTimeout(function() {
           if(autoClickerOwned > 0) {
@@ -1352,9 +1417,9 @@
           autoClickerLoop();
         }, autoClickInterval);
       }
+      
       // -------------------------
       // GAME LOOP
-      // -------------------------
       function gameLoop() {
         updateSpecialCooldownBar();
         if(enemy.type === "Regenerator" && enemy.currentHP > 0) {
@@ -1364,9 +1429,9 @@
         requestAnimationFrame(gameLoop);
       }
       gameLoop();
+      
       // -------------------------
       // EVENT LISTENERS & GAMEPLAY
-      // -------------------------
       clickButton.addEventListener("click", function(e) {
         if(!muteSound) clickSound.play();
         let earned = goldPerClick + baseGoldPerClickBonus;
@@ -1472,6 +1537,12 @@
           }
           lastAttackTime = currentTime;
           let damage = hero.attack * comboMultiplier;
+          // Improvement 4: if enemy is Shielded, reduce damage
+          if(enemy.type === "Shielded") {
+            let originalDamage = damage;
+            damage = Math.floor(damage * (1 - enemy.shieldReduction));
+            showNotification("Enemy's shield absorbed " + (originalDamage - damage) + " damage!");
+          }
           if(enemy.type === "Agile" && Math.random() < enemy.dodgeChance) {
             showNotification("Enemy dodged your attack!");
           } else {
@@ -1485,9 +1556,7 @@
           if(enemy.type === "Poisonous") {
             applyPoisonEffect();
           }
-          if(Math.random() < 0.3) {
-            triggerQTE();
-          }
+          if(Math.random() < 0.3) { triggerQTE(); }
           if(enemy.currentHP > 0 && Math.random() < 0.2) {
             let counterDmg = enemy.counterDamage;
             hero.health -= counterDmg;
@@ -1582,13 +1651,14 @@
       setInterval(() => { checkQuests(); checkAchievements(); }, 2000);
       function updateLeaderboard() {
         leaderboardListElem.innerHTML = "";
-        let sorted = leaderboard.sort((a,b) => b.score - a.score).slice(0, 5);
+        let sorted = leaderboard.sort((a, b) => b.score - a.score).slice(0, 5);
         sorted.forEach(entry => {
           const li = document.createElement("li");
           li.textContent = entry.name + ": " + Math.floor(entry.score);
           leaderboardListElem.appendChild(li);
         });
       }
+      
       // -------------------------
       // END OF EVENT LISTENERS
     })();
