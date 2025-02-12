@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <!-- Mobile responsiveness -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Medieval Idle Adventure – Ultimate Edition</title>
+  <title>Idle Kingdom – Version 1.0</title>
   <!-- Google Fonts for a medieval look -->
   <link href="https://fonts.googleapis.com/css?family=Cinzel:400,700|MedievalSharp" rel="stylesheet">
   <style>
@@ -160,22 +160,14 @@
       from { opacity: 0; }
       to { opacity: 1; }
     }
-    /* New UI Animation – Shake effect */
-    @keyframes shake {
-      0% { transform: translate(1px, 1px) rotate(0deg); }
-      10% { transform: translate(-1px, -2px) rotate(-1deg); }
-      20% { transform: translate(-3px, 0px) rotate(1deg); }
-      30% { transform: translate(3px, 2px) rotate(0deg); }
-      40% { transform: translate(1px, -1px) rotate(1deg); }
-      50% { transform: translate(-1px, 2px) rotate(-1deg); }
-      60% { transform: translate(-3px, 1px) rotate(0deg); }
-      70% { transform: translate(3px, 1px) rotate(-1deg); }
-      80% { transform: translate(-1px, -1px) rotate(1deg); }
-      90% { transform: translate(1px, 2px) rotate(0deg); }
-      100% { transform: translate(1px, -2px) rotate(-1deg); }
+    /* New Visual Effect – Pulse Animation (Improvement 15) */
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
     }
-    .shake {
-      animation: shake 0.5s;
+    .pulse {
+      animation: pulse 0.5s;
     }
     /* Quest list */
     #questList li {
@@ -292,7 +284,7 @@
       position: relative;
       cursor: pointer;
     }
-    /* Potion Mixing Mini-Game Modal (New Improvement 9) */
+    /* Potion Mixing Mini-Game Modal (Improvement 9) */
     #potionModal {
       position: fixed;
       top: 50%;
@@ -418,7 +410,7 @@
     <button id="closeArchery">Close</button>
   </div>
 
-  <!-- Potion Mixing Mini-Game Modal (New Improvement 9) -->
+  <!-- Potion Mixing Mini-Game Modal (Improvement 9) -->
   <div id="potionModal">
     <h3>Potion Mixing Challenge</h3>
     <p>Mix the potion by clicking the ingredients in the correct order: Herb → Mushroom → Crystal.</p>
@@ -452,44 +444,64 @@
         </div>
       </div>
 
-      <!-- Resource Management Section -->
+      <!-- Upgrades Section (formerly Resource Management) – Improvement 5 added extra upgrade paths -->
       <div class="section" id="resourceSection">
-        <h2>Resource Management</h2>
-        <p>Purchase buildings and upgrades to generate gold automatically.</p>
+        <h2>Upgrades</h2>
+        <p>Purchase buildings and upgrades to boost your gold production automatically.</p>
+        <!-- Gold Mine -->
         <div>
           <p><strong>Gold Mine</strong> (Generates 1 gold per second)</p>
           <p>Cost: <span id="goldMineCost">10</span> Gold</p>
           <button id="buyGoldMine" title="Purchase a Gold Mine">Buy Gold Mine</button>
           <p>Owned: <span id="goldMineOwned">0</span></p>
         </div>
+        <!-- Upgrade Click -->
         <div style="margin-top: 10px;">
           <p><strong>Upgrade Click Power</strong> (Increase gold per click by 1)</p>
           <p>Cost: <span id="clickUpgradeCost">25</span> Gold</p>
           <button id="upgradeClick" title="Increase click gold">Upgrade Click</button>
         </div>
+        <!-- Auto Clicker -->
         <div style="margin-top: 10px;">
           <p><strong>Auto Clicker</strong> (Automatically clicks using your heroes)</p>
           <p>Cost: <span id="autoClickerCost">50</span> Gold</p>
           <button id="buyAutoClicker" title="Buy an Auto Clicker">Buy Auto Clicker</button>
           <p>Owned: <span id="autoClickerOwned">0</span></p>
         </div>
+        <!-- Blacksmith -->
         <div style="margin-top: 10px;">
           <p><strong>Blacksmith</strong> (Increase hero attack by 1)</p>
           <p>Cost: <span id="blacksmithCost">100</span> Gold</p>
           <button id="hireBlacksmith" title="Hire a Blacksmith">Hire Blacksmith</button>
           <p>Level: <span id="blacksmithLevel">0</span></p>
         </div>
+        <!-- Adventurer's Guild -->
         <div style="margin-top: 10px;">
           <p><strong>Adventurer's Guild</strong> (Increase passive income by 5% per level)</p>
           <p>Cost: <span id="guildCost">100</span> Gold</p>
           <button id="buyGuild" title="Upgrade Adventurer's Guild">Buy Adventurer's Guild</button>
           <p>Level: <span id="guildLevel">0</span></p>
         </div>
+        <!-- Mage Tower -->
         <div style="margin-top: 10px;">
           <p><strong>Mage Tower</strong> (Increase critical multiplier by 0.1 per level)</p>
           <p>Cost: <span id="mageTowerCost">150</span> Gold</p>
           <button id="buyMageTower" title="Buy Mage Tower">Buy Mage Tower</button>
           <p>Level: <span id="mageTowerLevel">0</span></p>
+        </div>
+        <!-- Additional Upgrade – Training Grounds (Improvement 5) -->
+        <div style="margin-top: 10px;">
+          <p><strong>Training Grounds</strong> (Increase hero attack by 3)</p>
+          <p>Cost: 300 Gold</p>
+          <button id="buyTrainingGrounds" title="Purchase Training Grounds">Buy Training Grounds</button>
+          <p>Purchased: <span id="trainingGroundsPurchased">0</span></p>
+        </div>
+        <!-- Additional Upgrade – Armory (Improvement 5) -->
+        <div style="margin-top: 10px;">
+          <p><strong>Armory</strong> (Increase hero max health by 20)</p>
+          <p>Cost: 250 Gold</p>
+          <button id="buyArmory" title="Purchase Armory">Buy Armory</button>
+          <p>Purchased: <span id="armoryPurchased">0</span></p>
         </div>
       </div>
 
@@ -542,19 +554,17 @@
         <button id="buyPrestigeUpgrade" title="Buy Divine Blessing">Buy Divine Blessing</button>
         <p>Additional Multiplier: <span id="bonusMultiplierDisplay">0.0</span></p>
       </div>
-      <!-- Quest Section (Enhanced Branching Quest – Improvement 8) -->
+      <!-- Quest Section with Enhanced Branching (Improvement 8) and Journal -->
       <div class="section" id="questSection">
         <h2>Quests & Lore</h2>
         <p id="activeQuestText"></p>
         <ul id="questList"></ul>
-        <!-- Enhanced Branching Quest -->
         <div id="branchingQuest" style="display:none;">
           <p>How will you deal with the captured enemy?</p>
           <button id="mercifulChoice">Spare Him (Gain XP)</button>
           <button id="ruthlessChoice">Execute Him (Gain Gold)</button>
           <button id="interrogateChoice">Interrogate Him (Gain XP & Mystic Rune)</button>
         </div>
-        <!-- Journal for lore entries -->
         <div id="journalSection">
           <h4>Journal</h4>
           <div id="journalEntries"></div>
@@ -563,8 +573,7 @@
       <!-- Skill Tree Section -->
       <div class="section" id="skillTreeSection">
         <h2>Skill Tree</h2>
-        <p>Invest in your abilities. Choose your path: Combat, Resource, or Magic.
-           (Purchased skills will disappear.)</p>
+        <p>Invest in your abilities. Choose your path: Combat, Resource, or Magic. (Purchased skills will disappear.)</p>
         <ul id="skillList">
           <!-- Combat Branch -->
           <li data-branch="combat" data-id="combat1">
@@ -599,10 +608,10 @@
           </li>
         </ul>
       </div>
-      <!-- Achievement Section (Improvement 19 – Achievement rewards) -->
+      <!-- Achievement Section with Reward Descriptions (Improvement 19) -->
       <div class="section" id="achievementSection">
         <h2>Achievements</h2>
-        <p>Track your milestones:</p>
+        <p>Track your milestones and see their rewards:</p>
         <ul id="achievementList"></ul>
       </div>
       <!-- Seasonal Event Section -->
@@ -619,7 +628,7 @@
         <button id="shareScoreButton" title="Share your high score">Share Score</button>
         <button id="communityChallengeButton" title="Join Community Challenge">Join Community Challenge</button>
       </div>
-      <!-- Mini‑Game Section (Expanded Mini‑Games – Improvement 9) -->
+      <!-- Mini‑Game Section -->
       <div class="section" id="miniGameSection">
         <h2>Mini‑Game</h2>
         <p>Try the Archery Challenge or the new Potion Mixing Challenge for bonus rewards!</p>
@@ -652,7 +661,7 @@
       function currentGoldMultiplier() { return 1 + prestigeLevel * 0.1 + bonusMultiplier; }
       let highScore = 0;
       let enemyDefeatedCount = 0, specialAttackCount = 0;
-      // Quests & Achievements
+      // Quests with branching quest (Improvement 8)
       const quests = [
         { id:1, desc: "Gather 100 Gold", lore: "The people of Eldoria hunger for wealth.", condition: () => gold >= 100, reward: () => { hero.xp += 10; }, completed: false },
         { id:2, desc: "Defeat 5 Enemies", lore: "Dark forces stir in the shadows.", condition: () => enemyDefeatedCount >= 5, reward: () => { gold += 20; }, completed: false },
@@ -663,13 +672,14 @@
         { id:7, desc: "Complete 5 quests", lore: "Your legend grows with each epic feat.", condition: () => quests.filter(q => q.completed).length >= 5, reward: () => { gold += 100; }, completed: false },
         { id:8, desc: "Merciful or Ruthless?", lore: "A captured enemy begs for mercy. Your choice will shape your destiny.", condition: () => false, reward: () => {}, completed: false }
       ];
+      // Achievements with reward effects and new rewardText (Improvement 19)
       const achievements = [
-        { id:1, desc: "First Click", condition: () => gold > 0, awarded: false, rewardApplied: false, rewardEffect: () => { baseGoldPerClickBonus += 1; showNotification("Achievement reward: Gold per click increased!", 2000); } },
-        { id:2, desc: "Gold Hoarder (1,000 total earned)", condition: () => gold >= 1000, awarded: false, rewardApplied: false, rewardEffect: () => { /* Increase passive income */ resourceBoost *= 1.1; showNotification("Achievement reward: Passive income increased!", 2000); } },
-        { id:3, desc: "Slayer (50 enemies defeated)", condition: () => enemyDefeatedCount >= 50, awarded: false, rewardApplied: false, rewardEffect: () => { hero.attack += 1; showNotification("Achievement reward: Hero attack increased!", 2000); } },
-        { id:4, desc: "Prestige Master (Prestige Level 5)", condition: () => prestigeLevel >= 5, awarded: false, rewardApplied: false, rewardEffect: () => { bonusMultiplier += 0.1; showNotification("Achievement reward: Bonus gold multiplier increased!", 2000); } },
-        { id:5, desc: "Quest Conqueror (Complete 5 quests)", condition: () => quests.filter(q => q.completed).length >= 5, awarded: false, rewardApplied: false, rewardEffect: () => { hero.xpNeeded = Math.floor(hero.xpNeeded * 0.95); showNotification("Achievement reward: XP requirement reduced!", 2000); } },
-        { id:6, desc: "Herald's Blessing (Click a Royal Herald)", condition: () => clickedRoyalHerald, awarded: false, rewardApplied: false, rewardEffect: () => { relics += 1; showNotification("Achievement reward: Extra relic granted!", 2000); } }
+        { id:1, desc: "First Click", rewardText: "+1 Gold Per Click", condition: () => gold > 0, awarded: false, rewardApplied: false, rewardEffect: () => { baseGoldPerClickBonus += 1; } },
+        { id:2, desc: "Gold Hoarder (1,000 total earned)", rewardText: "Passive income increased by 10%", condition: () => gold >= 1000, awarded: false, rewardApplied: false, rewardEffect: () => { resourceBoost *= 1.1; } },
+        { id:3, desc: "Slayer (50 enemies defeated)", rewardText: "+1 Hero Attack", condition: () => enemyDefeatedCount >= 50, awarded: false, rewardApplied: false, rewardEffect: () => { hero.attack += 1; } },
+        { id:4, desc: "Prestige Master (Prestige Level 5)", rewardText: "+10% Bonus Gold Multiplier", condition: () => prestigeLevel >= 5, awarded: false, rewardApplied: false, rewardEffect: () => { bonusMultiplier += 0.1; } },
+        { id:5, desc: "Quest Conqueror (Complete 5 quests)", rewardText: "XP requirement reduced by 5%", condition: () => quests.filter(q => q.completed).length >= 5, awarded: false, rewardApplied: false, rewardEffect: () => { hero.xpNeeded = Math.floor(hero.xpNeeded * 0.95); } },
+        { id:6, desc: "Herald's Blessing (Click a Royal Herald)", rewardText: "+1 Extra Relic", condition: () => clickedRoyalHerald, awarded: false, rewardApplied: false, rewardEffect: () => { relics += 1; } }
       ];
       let clickedRoyalHerald = false;
       // Skill tree with prerequisites
@@ -703,13 +713,12 @@
       let musicVolume = 0.3, sfxVolume = 1, muteSound = false;
       // Community Challenge:
       let communityChallengeActive = false;
-      
+
       // -------------------------
-      // Dynamic Difficulty Scaling (Improvement 11)
-      function getDynamicDifficulty() {
-        return 1 + enemyDefeatedCount / 200;
-      }
-      
+      // Additional Upgrade Paths (Improvement 5)
+      let trainingGroundsPurchased = 0;
+      let armoryPurchased = 0;
+
       // -------------------------
       // DOM ELEMENTS
       const goldDisplay = document.getElementById("goldDisplay"),
@@ -805,7 +814,6 @@
 
       // -------------------------
       // UTILITY FUNCTIONS
-      // -------------------------
       function getPassiveIncomeMultiplier() {
         return resourceBoost * (1 + guildLevel * 0.05);
       }
@@ -965,7 +973,7 @@
       setInterval(() => { if(Math.random() < 0.1) spawnDragonEvent(); }, 45000);
       
       // -------------------------
-      // QUEST FUNCTIONS & LORE
+      // QUEST FUNCTIONS & JOURNAL (Lore now only in Journal)
       function updateQuestDisplay() {
         questListElem.innerHTML = "";
         let activeQuest = null;
@@ -981,7 +989,6 @@
         branchingQuestDiv.style.display = branchQuest ? "block" : "none";
       }
       function appendLore(text) {
-        // Lore is now recorded only in the Journal
         const jp = document.createElement("p");
         jp.textContent = text;
         journalEntriesDiv.appendChild(jp);
@@ -1003,7 +1010,7 @@
         achievementListElem.innerHTML = "";
         achievements.forEach(a => {
           const li = document.createElement("li");
-          li.textContent = a.desc + (a.awarded ? " (Achieved)" : "");
+          li.textContent = a.desc + (a.awarded ? " (Achieved) - Reward: " + a.rewardText : " - Reward: " + a.rewardText);
           achievementListElem.appendChild(li);
         });
       }
@@ -1011,7 +1018,6 @@
         achievements.forEach(a => {
           if(!a.awarded && a.condition()) {
             a.awarded = true;
-            // Apply reward effect if not already applied
             if(!a.rewardApplied && typeof a.rewardEffect === "function") {
               a.rewardEffect();
               a.rewardApplied = true;
@@ -1043,7 +1049,7 @@
           const skill = skills[id];
           const li = document.createElement("li");
           li.setAttribute("data-id", id);
-          let displayName = id; // Use the id as name (or add a custom name property if desired)
+          let displayName = id; 
           li.innerHTML = displayName + " – Cost: " + skill.cost + " Gold " +
                          "<button class='buySkillBtn' title='Buy " + displayName + "'>Buy</button>";
           if(skill.prerequisite && !skills[skill.prerequisite].purchased) {
@@ -1071,6 +1077,39 @@
             showNotification("Not enough gold for this skill!");
           }
         });
+      });
+      
+      // -------------------------
+      // Additional Upgrades (Improvement 5)
+      document.getElementById("buyTrainingGrounds").addEventListener("click", function() {
+        const cost = 300;
+        if(gold >= cost) {
+          gold -= cost;
+          trainingGroundsPurchased++;
+          hero.attack += 3;
+          // Add a pulse effect on the button
+          this.classList.add("pulse");
+          setTimeout(() => { this.classList.remove("pulse"); }, 500);
+          showNotification("Training Grounds purchased! Hero attack increased by 3.");
+          updateDisplays();
+        } else {
+          showNotification("Not enough gold for Training Grounds!");
+        }
+      });
+      document.getElementById("buyArmory").addEventListener("click", function() {
+        const cost = 250;
+        if(gold >= cost) {
+          gold -= cost;
+          armoryPurchased++;
+          hero.maxHealth += 20;
+          hero.health += 20;
+          this.classList.add("pulse");
+          setTimeout(() => { this.classList.remove("pulse"); }, 500);
+          showNotification("Armory purchased! Hero max health increased by 20.");
+          updateDisplays();
+        } else {
+          showNotification("Not enough gold for Armory!");
+        }
       });
       
       // -------------------------
@@ -1211,7 +1250,7 @@
         updateDisplays();
       });
       // -------------------------
-      // ENEMY SPAWNING (Now with Dynamic Difficulty Scaling & new Shielded type – Improvement 11 & 4)
+      // ENEMY SPAWNING (with Dynamic Difficulty Scaling & new Shielded type)
       function spawnEnemy() {
         enemy.level = hero.level;
         let r = Math.random();
@@ -1260,7 +1299,7 @@
           enemy.dodgeChance = 0;
           enemy.counterDamage = enemy.level * 2;
           enemy.regen = 0;
-          enemy.shieldReduction = 0.5; // 50% damage reduction
+          enemy.shieldReduction = 0.5;
           documentHeaderEnemyType.textContent = "(Shielded)";
         } else if(r < 0.55) {
           enemy.type = "Regenerator";
@@ -1577,7 +1616,6 @@
             gold += enemy.rewardGold * currentGoldMultiplier() * temporaryGoldBonus;
             hero.xp += enemy.rewardXP;
             showNotification("Enemy defeated! Gained " + Math.floor(enemy.rewardGold * currentGoldMultiplier() * temporaryGoldBonus) + " Gold and " + enemy.rewardXP + " XP!");
-            // Enhanced UI Animation: Shake the battle section on enemy defeat (Improvement 14)
             document.getElementById("battleSection").classList.add("shake");
             setTimeout(() => { document.getElementById("battleSection").classList.remove("shake"); }, 500);
             spawnEnemy();
@@ -1667,4 +1705,4 @@
     })();
   </script>
 </body>
-</html>
+</html>o
