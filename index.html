@@ -275,21 +275,6 @@
       position: relative;
       cursor: pointer;
     }
-    /* Dice Mini-Game Modal */
-    #diceModal {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: #fffaf0;
-      border: 2px solid #8b4513;
-      padding: 20px;
-      z-index: 3500;
-      display: none;
-      width: 300px;
-      box-shadow: 4px 4px 8px rgba(0,0,0,0.3);
-      text-align: center;
-    }
     /* Journal section styling */
     #journalSection {
       border: 2px solid #8b4513;
@@ -299,12 +284,6 @@
       margin-top: 10px;
       max-height: 150px;
       overflow-y: auto;
-    }
-    /* Combo meter display */
-    #comboDisplay {
-      font-weight: bold;
-      font-size: 1.2em;
-      color: #8b4513;
     }
     /* Media queries for mobile enhancements */
     @media (max-width: 600px) {
@@ -347,9 +326,8 @@
     <h2>Welcome to Medieval Idle Adventure!</h2>
     <p>
       Tap the treasure chest to gather gold, upgrade your abilities, battle diverse foes, and uncover ancient lore.
-      Use Quick Strike when it appears to boost your combo meter and increase your damage.
-      Watch the combo meter in battle to see how much bonus damage you’re accumulating.
       Choose your hero specialization in Settings to tailor your gameplay style.
+      Explore quests, mini-games, and community challenges. Good luck, brave hero!
     </p>
     <button id="dismissTutorial">Got It!</button>
   </div>
@@ -399,14 +377,6 @@
     <p>Hit the target for bonus gold and Mystic Runes!</p>
     <div id="archeryTarget"></div>
     <button id="closeArchery">Close</button>
-  </div>
-
-  <!-- Dice Mini-Game Modal -->
-  <div id="diceModal">
-    <h3>Dice Roll Challenge</h3>
-    <p>Roll a dice – if you get a 6, you'll earn bonus gold!</p>
-    <button id="rollDice">Roll Dice</button>
-    <button id="closeDice">Close</button>
   </div>
 
   <!-- Container with two columns -->
@@ -506,8 +476,6 @@
             <div id="specialCooldownBar"></div>
           </div>
           <span id="specialCooldownDisplay"></span>
-          <!-- Combo meter display -->
-          <p>Combo: <span id="comboDisplay">1.0x</span></p>
           <br>
           <button id="spawnEnemyButton" title="Spawn a new enemy">Spawn New Enemy</button>
         </div>
@@ -528,9 +496,6 @@
         <p>Divine Blessing: Increases gold multiplier by 0.2 (Cost: 1 Prestige Point)</p>
         <button id="buyPrestigeUpgrade" title="Buy Divine Blessing">Buy Divine Blessing</button>
         <p>Additional Multiplier: <span id="bonusMultiplierDisplay">0.0</span></p>
-        <!-- Permanent Trait: Unlocks after Prestige Level 3 -->
-        <p>Permanent Trait (Unlock at Prestige Level 3): Increases Gold per Click permanently by 1.</p>
-        <button id="unlockTrait" disabled title="Unlock Permanent Trait">Unlock Permanent Trait</button>
       </div>
       <!-- Quest Section -->
       <div class="section" id="questSection">
@@ -611,9 +576,8 @@
       <!-- Mini-Game Section -->
       <div class="section" id="miniGameSection">
         <h2>Mini-Game</h2>
-        <p>Try the Archery Challenge or Dice Roll for bonus rewards!</p>
+        <p>Try the Archery Challenge for bonus rewards!</p>
         <button id="startArchery">Start Archery Challenge</button>
-        <button id="startDice">Start Dice Roll Challenge</button>
       </div>
       <!-- Lore Section -->
       <div class="section" id="loreSection">
@@ -632,7 +596,7 @@
       // -------------------------
       // GLOBAL VARIABLES & STATE
       // -------------------------
-      const saveVersion = 2;
+      const saveVersion = 2; // incremented due to new features
       let gold = 0, goldPerClick = 1, baseGoldPerClickBonus = 0;
       let goldMineOwned = 0, goldMineCost = 10, clickUpgradeCost = 25;
       let critChance = 0.10, critMultiplier = 2, critUpgradeCost = 50;
@@ -641,8 +605,8 @@
       let guildLevel = 0, guildCost = 100;
       let mageTowerLevel = 0, mageTowerCost = 150;
       // Hero state:
-      let hero = { level: 1, xp: 0, xpNeeded: 50, attack: 1, health: 100, maxHealth: 100, stunChance: 0 };
-      let enemy = { maxHP: 0, currentHP: 0, rewardGold: 0, rewardXP: 0, level: 1, type: "Normal", dodgeChance: 0, counterDamage: 0, regen: 0, poison: false, poisonDamage: 0, poisonDuration: 0, stunned: false };
+      let hero = { level: 1, xp: 0, xpNeeded: 50, attack: 1, health: 100, maxHealth: 100 };
+      let enemy = { maxHP: 0, currentHP: 0, rewardGold: 0, rewardXP: 0, level: 1, type: "Normal", dodgeChance: 0, counterDamage: 0, regen: 0, poison: false, poisonDamage: 0, poisonDuration: 0 };
       let specialAvailable = true, specialCooldownTime = 10, specialCooldownRemaining = 0;
       let prestigeLevel = 0, prestigePoints = 0, bonusMultiplier = 0.0;
       function currentGoldMultiplier() { return 1 + prestigeLevel * 0.1 + bonusMultiplier; }
@@ -671,7 +635,7 @@
       // Skill tree with branching paths.
       const skills = {
         combat1: { purchased: false, cost: 100, effect: () => { hero.attack += 2; } },
-        combat2: { purchased: false, cost: 150, effect: () => { /* Increase combo bonus */ comboMultiplier += 0.2; } },
+        combat2: { purchased: false, cost: 150, effect: () => { comboMultiplier += 0.2; } },
         combat3: { purchased: false, cost: 200, effect: () => { hero.stunChance = 0.2; } },
         resource1: { purchased: false, cost: 120, effect: () => { resourceBoost *= 1.2; } },
         resource2: { purchased: false, cost: 170, effect: () => { costReduction = 0.9; } },
@@ -685,8 +649,6 @@
       let difficultyMultiplier = 1;
       let challengeMode = false;
       let heroSpecialization = "Warrior";
-      // Permanent Trait (not unlocked until Prestige Level 3)
-      let permanentTraitUnlocked = false;
       // Seasonal event: temporary gold bonus multiplier
       let eventActive = false, eventTimeRemaining = 0, eventInterval = null;
       let temporaryGoldBonus = 1;
@@ -745,8 +707,7 @@
             specialCooldownDisplay = document.getElementById("specialCooldownDisplay"),
             spawnEnemyButton = document.getElementById("spawnEnemyButton"),
             documentHeaderEnemyType = document.getElementById("enemyTypeLabel"),
-            specialCooldownBar = document.getElementById("specialCooldownBar"),
-            comboDisplay = document.getElementById("comboDisplay");
+            specialCooldownBar = document.getElementById("specialCooldownBar");
       const heroHealthDisplay = document.getElementById("heroHealth"),
             heroMaxHealthDisplay = document.getElementById("heroMaxHealth"),
             healButton = document.getElementById("healButton");
@@ -761,8 +722,7 @@
             headerPrestigeMultiplier = document.getElementById("headerPrestigeMultiplier"),
             headerHighScore = document.getElementById("headerHighScore"),
             headerRelics = document.getElementById("headerRelics"),
-            headerMysticRunes = document.getElementById("headerMysticRunes"),
-            unlockTraitButton = document.getElementById("unlockTrait");
+            headerMysticRunes = document.getElementById("headerMysticRunes");
       // Quests & Lore
       const questListElem = document.getElementById("questList"),
             activeQuestText = document.getElementById("activeQuestText"),
@@ -780,15 +740,23 @@
       const leaderboardListElem = document.getElementById("leaderboardList"),
             shareScoreButton = document.getElementById("shareScoreButton"),
             communityChallengeButton = document.getElementById("communityChallengeButton");
-      // Mini-Games
+      // Mini-Game
       const startArcheryButton = document.getElementById("startArchery"),
             archeryModal = document.getElementById("archeryModal"),
             archeryTarget = document.getElementById("archeryTarget"),
-            closeArcheryButton = document.getElementById("closeArchery"),
-            startDiceButton = document.getElementById("startDice"),
-            diceModal = document.getElementById("diceModal"),
-            rollDiceButton = document.getElementById("rollDice"),
-            closeDiceButton = document.getElementById("closeDice");
+            closeArcheryButton = document.getElementById("closeArchery");
+      // Notification
+      const notificationDiv = document.getElementById("notification");
+      // Settings
+      const settingsButton = document.getElementById("settingsButton"),
+            settingsModal = document.getElementById("settingsModal"),
+            musicVolumeSlider = document.getElementById("musicVolumeSlider"),
+            sfxVolumeSlider = document.getElementById("sfxVolumeSlider"),
+            muteToggle = document.getElementById("muteToggle"),
+            difficultySelect = document.getElementById("difficultySelect"),
+            challengeModeToggle = document.getElementById("challengeModeToggle"),
+            specializationSelect = document.getElementById("specializationSelect"),
+            closeSettings = document.getElementById("closeSettings");
       // Tutorial
       const tutorialOverlay = document.getElementById("tutorialOverlay"),
             dismissTutorial = document.getElementById("dismissTutorial");
@@ -808,9 +776,6 @@
       // -------------------------
       function getPassiveIncomeMultiplier() {
         return resourceBoost * (1 + guildLevel * 0.05);
-      }
-      function updateComboDisplay() {
-        comboDisplay.textContent = comboMultiplier.toFixed(1) + "x";
       }
       function updateDisplays() {
         goldDisplay.textContent = Math.floor(gold);
@@ -858,7 +823,6 @@
         updateSkillTree();
         updateAchievementDisplay();
         updateLeaderboard();
-        updateComboDisplay();
       }
       function showNotification(message, duration = 2000) {
         notificationDiv.textContent = message;
@@ -885,15 +849,6 @@
           specialCooldownDisplay.textContent = "Ready!";
         }
       }
-      // -------------------------
-      // DYNAMIC DIFFICULTY SCALING
-      // -------------------------
-      // Every minute, slightly increase the difficulty multiplier.
-      setInterval(() => {
-        difficultyMultiplier += 0.01;
-        // Optionally notify the player (commented out)
-        // showNotification("The enemy forces grow stronger...", 1500);
-      }, 60000);
       // -------------------------
       // RANDOM WORLD EVENTS
       // -------------------------
@@ -1060,6 +1015,7 @@
       // SKILL TREE FUNCTIONS (Remove purchased upgrade)
       // -------------------------
       function updateSkillTree() {
+        // We loop over any remaining skill <li> elements.
         const lis = document.querySelectorAll("#skillList li");
         lis.forEach(li => {
           li.style.display = "list-item";
@@ -1078,6 +1034,7 @@
             skills[skillId].purchased = true;
             skills[skillId].effect();
             showNotification("Skill purchased: " + li.textContent, 2000);
+            // Remove the skill from the tree so it no longer appears.
             li.remove();
             updateDisplays();
           } else {
@@ -1150,21 +1107,6 @@
           showNotification("Community Challenge already active!");
         }
       });
-      // Permanent Trait: unlock if Prestige Level >= 3 and not yet unlocked.
-      unlockTraitButton.addEventListener("click", function() {
-        if(prestigeLevel >= 3 && !permanentTraitUnlocked) {
-          permanentTraitUnlocked = true;
-          baseGoldPerClickBonus += 1;
-          showNotification("Permanent Trait unlocked! Gold per click increased permanently by 1.", 2500);
-          unlockTraitButton.disabled = true;
-          updateDisplays();
-        } else {
-          showNotification("You cannot unlock this trait yet!");
-        }
-      });
-      // -------------------------
-      // MINI-GAME: Archery Challenge
-      // -------------------------
       startArcheryButton.addEventListener("click", function() {
         archeryModal.style.display = "block";
         archeryTarget.style.left = Math.random() * 150 + "px";
@@ -1182,26 +1124,6 @@
       closeArcheryButton.addEventListener("click", function() {
         archeryModal.style.display = "none";
       });
-      // -------------------------
-      // MINI-GAME: Dice Roll Challenge
-      // -------------------------
-      startDiceButton.addEventListener("click", function() {
-        diceModal.style.display = "block";
-      });
-      rollDiceButton.addEventListener("click", function() {
-        const roll = Math.floor(Math.random() * 6) + 1;
-        showNotification("You rolled a " + roll + "!");
-        if(roll === 6) {
-          let bonusGold = 500;
-          gold += bonusGold;
-          showNotification("Lucky roll! +" + bonusGold + " Gold awarded!", 2500);
-        }
-        updateDisplays();
-      });
-      closeDiceButton.addEventListener("click", function() {
-        diceModal.style.display = "none";
-      });
-      // Branching quest choices
       document.getElementById("mercifulChoice").addEventListener("click", function() {
         let bonusXP = 100;
         hero.xp += bonusXP;
@@ -1226,7 +1148,7 @@
       function spawnEnemy() {
         enemy.level = hero.level;
         let r = Math.random();
-        // Using doubled base values for a tougher fight.
+        // To make battles harder, we double the base values:
         if(r < 0.15) {
           enemy.type = "Poisonous";
           enemy.maxHP = Math.floor((20 + enemy.level * 10) * difficultyMultiplier);
@@ -1283,7 +1205,6 @@
           documentHeaderEnemyType.textContent = "";
         }
         enemy.currentHP = enemy.maxHP;
-        enemy.stunned = false;
         updateDisplays();
       }
       // -------------------------
@@ -1308,10 +1229,9 @@
           }
           updateDisplays();
           if(hero.level >= 10) prestigeButton.disabled = false;
-          // Activate branching quest at level 7 if not already completed.
           if(hero.level === 7) {
             const branchQuest = quests.find(q => q.id === 8);
-            if(branchQuest) branchQuest.condition = () => false;
+            if(branchQuest) branchQuest.condition = () => false; // manual activation
           }
         }
       }
@@ -1338,7 +1258,7 @@
         if(qteActive) return;
         qteActive = true;
         qteButton.style.display = "block";
-        setTimeout(() => {
+        let qteTimer = setTimeout(() => {
           qteActive = false;
           qteButton.style.display = "none";
         }, 2000);
@@ -1350,7 +1270,6 @@
           if(!muteSound) qteSuccessSound.play();
           qteActive = false;
           qteButton.style.display = "none";
-          updateComboDisplay();
         }
       });
       // -------------------------
@@ -1553,12 +1472,6 @@
           }
           lastAttackTime = currentTime;
           let damage = hero.attack * comboMultiplier;
-          // If hero has stun chance from Stunning Blow upgrade, try to stun the enemy.
-          if(hero.stunChance && Math.random() < hero.stunChance) {
-            enemy.stunned = true;
-            showNotification("Enemy stunned for 2 seconds!");
-            setTimeout(() => { enemy.stunned = false; }, 2000);
-          }
           if(enemy.type === "Agile" && Math.random() < enemy.dodgeChance) {
             showNotification("Enemy dodged your attack!");
           } else {
@@ -1575,8 +1488,7 @@
           if(Math.random() < 0.3) {
             triggerQTE();
           }
-          // Only allow enemy counterattack if enemy is not stunned.
-          if(enemy.currentHP > 0 && !enemy.stunned && Math.random() < 0.2) {
+          if(enemy.currentHP > 0 && Math.random() < 0.2) {
             let counterDmg = enemy.counterDamage;
             hero.health -= counterDmg;
             showNotification("Enemy counterattacked for " + counterDmg + " damage!");
@@ -1649,7 +1561,7 @@
         blacksmithLevel = 0; blacksmithCost = 100;
         guildLevel = 0; guildCost = 100;
         mageTowerLevel = 0; mageTowerCost = 150;
-        hero = { level: 1, xp: 0, xpNeeded: 50, attack: 1, health: 100, maxHealth: 100, stunChance: 0 };
+        hero = { level: 1, xp: 0, xpNeeded: 50, attack: 1, health: 100, maxHealth: 100 };
         spawnEnemy();
         updateDisplays();
         prestigeButton.disabled = true;
