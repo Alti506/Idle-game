@@ -141,7 +141,7 @@
       0% { opacity: 1; transform: translateY(0px); }
       100% { opacity: 0; transform: translateY(-50px); }
     }
-    /* Royal Herald (Golden Cookie analogue) */
+    /* Royal Herald */
     .royal-herald {
       position: fixed;
       background: gold;
@@ -235,7 +235,7 @@
       font-size: 0.8em;
       background: #a0522d;
     }
-    /* QTE Button for combo events */
+    /* QTE Button */
     #qteButton {
       display: none;
       position: fixed;
@@ -250,30 +250,6 @@
       font-family: 'MedievalSharp', cursive;
       font-size: 1.2em;
       z-index: 2500;
-    }
-    /* Dragon event styling */
-    .dragon-event {
-      position: fixed;
-      background: darkred;
-      color: white;
-      padding: 10px 20px;
-      border: 2px solid #000;
-      border-radius: 8px;
-      font-family: 'MedievalSharp', cursive;
-      font-size: 1.2em;
-      z-index: 3000;
-      cursor: pointer;
-      box-shadow: 2px 2px 6px rgba(0,0,0,0.5);
-      animation: fadeIn 0.5s;
-    }
-    /* Enemy hit animation */
-    .enemy-hit {
-      animation: enemyHit 0.3s;
-    }
-    @keyframes enemyHit {
-      0% { background-color: transparent; }
-      50% { background-color: rgba(255,0,0,0.5); }
-      100% { background-color: transparent; }
     }
     /* Archery Mini-Game Modal */
     #archeryModal {
@@ -392,7 +368,7 @@
     <button id="closeSettings">Close</button>
   </div>
 
-  <!-- QTE Button for Quick Time Events -->
+  <!-- QTE Button -->
   <button id="qteButton">Quick Strike!</button>
 
   <!-- Archery Mini-Game Modal -->
@@ -526,7 +502,7 @@
         <h2>Quests & Lore</h2>
         <p id="activeQuestText"></p>
         <ul id="questList"></ul>
-        <!-- Branching Quest: Merciful or Ruthless -->
+        <!-- Branching Quest -->
         <div id="branchingQuest" style="display:none;">
           <p>How will you deal with the captured enemy?</p>
           <button id="mercifulChoice">Spare Him (Gain XP)</button>
@@ -538,10 +514,11 @@
           <div id="journalEntries"></div>
         </div>
       </div>
-      <!-- Skill Tree Section (Branching) -->
+      <!-- Skill Tree Section -->
       <div class="section" id="skillTreeSection">
         <h2>Skill Tree</h2>
-        <p>Invest in your abilities. Choose your path: Combat, Resource, or Magic.</p>
+        <p>Invest in your abilities. Choose your path: Combat, Resource, or Magic.
+           (Purchased skills will disappear.)</p>
         <ul id="skillList">
           <!-- Combat Branch -->
           <li data-branch="combat" data-id="combat1">
@@ -644,7 +621,7 @@
         { id:5, desc: "Use Special Attack 3 times", lore: "Master the art of devastating blows.", condition: () => specialAttackCount >= 3, reward: () => { hero.xp += 20; }, completed: false },
         { id:6, desc: "Unlock a new enemy type", lore: "New foes arise as challenges intensify.", condition: () => enemy.type !== "Normal", reward: () => { gold += 30; }, completed: false },
         { id:7, desc: "Complete 5 quests", lore: "Your legend grows with each epic feat.", condition: () => quests.filter(q => q.completed).length >= 5, reward: () => { gold += 100; }, completed: false },
-        { id:8, desc: "Merciful or Ruthless?", lore: "A captured enemy begs for mercy. Your choice will shape your destiny.", condition: () => false, reward: () => {}, completed: false } // branching quest activated manually
+        { id:8, desc: "Merciful or Ruthless?", lore: "A captured enemy begs for mercy. Your choice will shape your destiny.", condition: () => false, reward: () => {}, completed: false }
       ];
       const achievements = [
         { id:1, desc: "First Click", condition: () => gold > 0, awarded: false },
@@ -658,17 +635,17 @@
       // Skill tree with branching paths.
       const skills = {
         combat1: { purchased: false, cost: 100, effect: () => { hero.attack += 2; } },
-        combat2: { purchased: false, cost: 150, effect: () => { /* increase combo bonus multiplier */ comboMultiplier += 0.2; } },
+        combat2: { purchased: false, cost: 150, effect: () => { comboMultiplier += 0.2; } },
         combat3: { purchased: false, cost: 200, effect: () => { hero.stunChance = 0.2; } },
-        resource1: { purchased: false, cost: 120, effect: () => { /* increase gold mine output by 20% */ resourceBoost *= 1.2; } },
-        resource2: { purchased: false, cost: 170, effect: () => { /* reduce upgrade costs by 10% */ costReduction = 0.9; } },
+        resource1: { purchased: false, cost: 120, effect: () => { resourceBoost *= 1.2; } },
+        resource2: { purchased: false, cost: 170, effect: () => { costReduction = 0.9; } },
         resource3: { purchased: false, cost: 220, effect: () => { relicChance += 0.05; } },
         magic1: { purchased: false, cost: 130, effect: () => { critMultiplier += 0.2; } }
       };
       let resourceBoost = 1.0, costReduction = 1.0, relicChance = 0.0;
-      // New resource: relics and mystic runes
+      // New resources: relics and mystic runes
       let relics = 0, mysticRunes = 0;
-      // Settings: difficulty and challenge mode, hero specialization
+      // Settings: difficulty, challenge mode, hero specialization
       let difficultyMultiplier = 1;
       let challengeMode = false;
       let heroSpecialization = "Warrior";
@@ -682,7 +659,7 @@
       // Combo system
       let lastAttackTime = 0, comboMultiplier = 1;
       const healCost = 50, healAmount = 20;
-      // Auto clicker interval (in ms)
+      // Auto clicker interval (ms)
       let autoClickInterval = 3000;
       // Settings variables
       let musicVolume = 0.3, sfxVolume = 1, muteSound = false;
@@ -873,7 +850,7 @@
         }
       }
       // -------------------------
-      // RANDOM WORLD EVENTS (Dynamic Events)
+      // RANDOM WORLD EVENTS
       // -------------------------
       function triggerRandomEvent() {
         let r = Math.random();
@@ -891,7 +868,7 @@
         if(Math.random() < 0.2) triggerRandomEvent();
       }, 60000);
       // -------------------------
-      // ROYAL HERALD (Golden Cookie analogue)
+      // ROYAL HERALD
       // -------------------------
       let royalHeraldExists = false;
       function spawnRoyalHerald() {
@@ -936,7 +913,7 @@
         if(Math.random() < 0.3) spawnRoyalHerald();
       }, 30000);
       // -------------------------
-      // DRAGON EVENT (Dynamic World Event)
+      // DRAGON EVENT
       // -------------------------
       let dragonEventActive = false;
       function spawnDragonEvent() {
@@ -990,7 +967,6 @@
         } else {
           activeQuestText.textContent = "All quests completed!";
         }
-        // Show branching quest if quest id 8 is active and not completed
         const branchQuest = quests.find(q => q.id === 8 && !q.completed);
         if(branchQuest) {
           branchingQuestDiv.style.display = "block";
@@ -1002,7 +978,6 @@
         const p = document.createElement("p");
         p.textContent = text;
         dynamicLoreContainer.appendChild(p);
-        // Also add to journal
         const jp = document.createElement("p");
         jp.textContent = text;
         journalEntriesDiv.appendChild(jp);
@@ -1037,15 +1012,13 @@
         });
       }
       // -------------------------
-      // SKILL TREE FUNCTIONS (Branching)
+      // SKILL TREE FUNCTIONS (Remove purchased upgrade)
       // -------------------------
       function updateSkillTree() {
+        // We loop over any remaining skill <li> elements.
         const lis = document.querySelectorAll("#skillList li");
         lis.forEach(li => {
           li.style.display = "list-item";
-          if(li.getAttribute("data-purchased") === "true") {
-            li.style.textDecoration = "line-through";
-          }
         });
       }
       document.querySelectorAll(".buySkillBtn").forEach(btn => {
@@ -1059,9 +1032,10 @@
           if(gold >= skills[skillId].cost) {
             gold -= skills[skillId].cost;
             skills[skillId].purchased = true;
-            li.setAttribute("data-purchased", "true");
             skills[skillId].effect();
             showNotification("Skill purchased: " + li.textContent, 2000);
+            // Remove the skill from the tree so it no longer appears.
+            li.remove();
             updateDisplays();
           } else {
             showNotification("Not enough gold for this skill!");
@@ -1118,7 +1092,6 @@
         localStorage.setItem("tutorialSeen", "true");
         backgroundMusic.play().catch(err => console.log("Music play error:", err));
       });
-      // Community Challenge
       communityChallengeButton.addEventListener("click", function() {
         if(!communityChallengeActive) {
           communityChallengeActive = true;
@@ -1134,7 +1107,6 @@
           showNotification("Community Challenge already active!");
         }
       });
-      // Archery Mini-Game
       startArcheryButton.addEventListener("click", function() {
         archeryModal.style.display = "block";
         archeryTarget.style.left = Math.random() * 150 + "px";
@@ -1152,7 +1124,6 @@
       closeArcheryButton.addEventListener("click", function() {
         archeryModal.style.display = "none";
       });
-      // Branching quest choices
       document.getElementById("mercifulChoice").addEventListener("click", function() {
         let bonusXP = 100;
         hero.xp += bonusXP;
@@ -1172,23 +1143,24 @@
         updateDisplays();
       });
       // -------------------------
-      // ENEMY SPAWNING (with enhanced types)
+      // ENEMY SPAWNING (Enhanced difficulty)
       // -------------------------
       function spawnEnemy() {
         enemy.level = hero.level;
         let r = Math.random();
+        // To make battles harder, we double the base values:
         if(r < 0.15) {
           enemy.type = "Poisonous";
-          enemy.maxHP = Math.floor((10 + enemy.level * 5) * difficultyMultiplier);
+          enemy.maxHP = Math.floor((20 + enemy.level * 10) * difficultyMultiplier);
           enemy.rewardGold = Math.floor((5 + enemy.level * 2) * 1.5);
           enemy.rewardXP = Math.floor((10 + enemy.level * 3) * 1.5);
           enemy.poison = true;
           enemy.poisonDamage = enemy.level * 2;
-          enemy.poisonDuration = 3; // seconds
+          enemy.poisonDuration = 3;
           documentHeaderEnemyType.textContent = "(Poisonous)";
         } else if(r < 0.2) {
           enemy.type = "Boss";
-          enemy.maxHP = ((10 + enemy.level * 5) * 3) * difficultyMultiplier * (challengeMode ? 1.2 : 1);
+          enemy.maxHP = ((20 + enemy.level * 10) * 3) * difficultyMultiplier * (challengeMode ? 1.2 : 1);
           enemy.rewardGold = ((5 + enemy.level * 2) * 3);
           enemy.rewardXP = ((10 + enemy.level * 3) * 3);
           enemy.dodgeChance = 0;
@@ -1197,7 +1169,7 @@
           documentHeaderEnemyType.textContent = "(Boss)";
         } else if(r < 0.3) {
           enemy.type = "Armored";
-          enemy.maxHP = Math.floor((10 + enemy.level * 5) * 1.5 * difficultyMultiplier);
+          enemy.maxHP = Math.floor((20 + enemy.level * 10) * 1.5 * difficultyMultiplier);
           enemy.rewardGold = Math.floor((5 + enemy.level * 2) * 1.2);
           enemy.rewardXP = Math.floor((10 + enemy.level * 3) * 0.8);
           enemy.dodgeChance = 0;
@@ -1206,7 +1178,7 @@
           documentHeaderEnemyType.textContent = "(Armored)";
         } else if(r < 0.4) {
           enemy.type = "Agile";
-          enemy.maxHP = (10 + enemy.level * 5) * difficultyMultiplier;
+          enemy.maxHP = (20 + enemy.level * 10) * difficultyMultiplier;
           enemy.rewardGold = 5 + enemy.level * 2;
           enemy.rewardXP = 10 + enemy.level * 3;
           enemy.dodgeChance = 0.3;
@@ -1215,7 +1187,7 @@
           documentHeaderEnemyType.textContent = "(Agile)";
         } else if(r < 0.5) {
           enemy.type = "Regenerator";
-          enemy.maxHP = Math.floor((10 + enemy.level * 5) * 1.2 * difficultyMultiplier);
+          enemy.maxHP = Math.floor((20 + enemy.level * 10) * 1.2 * difficultyMultiplier);
           enemy.rewardGold = Math.floor((5 + enemy.level * 2) * 1.1);
           enemy.rewardXP = Math.floor((10 + enemy.level * 3) * 1.1);
           enemy.dodgeChance = 0;
@@ -1224,7 +1196,7 @@
           documentHeaderEnemyType.textContent = "(Regenerator)";
         } else {
           enemy.type = "Normal";
-          enemy.maxHP = (10 + enemy.level * 5) * difficultyMultiplier;
+          enemy.maxHP = (20 + enemy.level * 10) * difficultyMultiplier;
           enemy.rewardGold = 5 + enemy.level * 2;
           enemy.rewardXP = 10 + enemy.level * 3;
           enemy.dodgeChance = 0;
@@ -1248,7 +1220,6 @@
           hero.xpNeeded = Math.floor(hero.xpNeeded * 1.5);
           showNotification("Level Up! You are now level " + hero.level + "!", 2500);
           if(!muteSound) levelUpSound.play();
-          // Apply hero specialization bonus on level up
           if(heroSpecialization === "Warrior") {
             hero.attack += 1;
           } else if(heroSpecialization === "Merchant") {
@@ -1258,10 +1229,9 @@
           }
           updateDisplays();
           if(hero.level >= 10) prestigeButton.disabled = false;
-          // Trigger branching quest at level 7 as an example
           if(hero.level === 7) {
             const branchQuest = quests.find(q => q.id === 8);
-            if(branchQuest) branchQuest.condition = () => false; // manually activate
+            if(branchQuest) branchQuest.condition = () => false; // manual activation
           }
         }
       }
@@ -1585,7 +1555,6 @@
         showNotification("Prestige Activated! Gold Multiplier is now " + currentGoldMultiplier().toFixed(1) + "x", 3000);
         if(gold > highScore) highScore = gold;
         leaderboard.push({ name: "Hero", score: gold });
-        // Persistent bonus: keep baseGoldPerClickBonus between prestiges
         gold = 0; goldPerClick = 1; goldMineOwned = 0; goldMineCost = 10; clickUpgradeCost = 25;
         critChance = 0.10; critMultiplier = 2; critUpgradeCost = 50;
         autoClickerOwned = 0; autoClickerCost = 50;
