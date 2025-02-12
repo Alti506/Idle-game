@@ -160,6 +160,23 @@
       from { opacity: 0; }
       to { opacity: 1; }
     }
+    /* New UI Animation – Shake effect */
+    @keyframes shake {
+      0% { transform: translate(1px, 1px) rotate(0deg); }
+      10% { transform: translate(-1px, -2px) rotate(-1deg); }
+      20% { transform: translate(-3px, 0px) rotate(1deg); }
+      30% { transform: translate(3px, 2px) rotate(0deg); }
+      40% { transform: translate(1px, -1px) rotate(1deg); }
+      50% { transform: translate(-1px, 2px) rotate(-1deg); }
+      60% { transform: translate(-3px, 1px) rotate(0deg); }
+      70% { transform: translate(3px, 1px) rotate(-1deg); }
+      80% { transform: translate(-1px, -1px) rotate(1deg); }
+      90% { transform: translate(1px, 2px) rotate(0deg); }
+      100% { transform: translate(1px, -2px) rotate(-1deg); }
+    }
+    .shake {
+      animation: shake 0.5s;
+    }
     /* Quest list */
     #questList li {
       list-style: none;
@@ -439,41 +456,35 @@
       <div class="section" id="resourceSection">
         <h2>Resource Management</h2>
         <p>Purchase buildings and upgrades to generate gold automatically.</p>
-        <!-- Gold Mine -->
         <div>
           <p><strong>Gold Mine</strong> (Generates 1 gold per second)</p>
           <p>Cost: <span id="goldMineCost">10</span> Gold</p>
           <button id="buyGoldMine" title="Purchase a Gold Mine">Buy Gold Mine</button>
           <p>Owned: <span id="goldMineOwned">0</span></p>
         </div>
-        <!-- Upgrade Click -->
         <div style="margin-top: 10px;">
           <p><strong>Upgrade Click Power</strong> (Increase gold per click by 1)</p>
           <p>Cost: <span id="clickUpgradeCost">25</span> Gold</p>
           <button id="upgradeClick" title="Increase click gold">Upgrade Click</button>
         </div>
-        <!-- Auto Clicker -->
         <div style="margin-top: 10px;">
           <p><strong>Auto Clicker</strong> (Automatically clicks using your heroes)</p>
           <p>Cost: <span id="autoClickerCost">50</span> Gold</p>
           <button id="buyAutoClicker" title="Buy an Auto Clicker">Buy Auto Clicker</button>
           <p>Owned: <span id="autoClickerOwned">0</span></p>
         </div>
-        <!-- Blacksmith -->
         <div style="margin-top: 10px;">
           <p><strong>Blacksmith</strong> (Increase hero attack by 1)</p>
           <p>Cost: <span id="blacksmithCost">100</span> Gold</p>
           <button id="hireBlacksmith" title="Hire a Blacksmith">Hire Blacksmith</button>
           <p>Level: <span id="blacksmithLevel">0</span></p>
         </div>
-        <!-- Adventurer's Guild -->
         <div style="margin-top: 10px;">
           <p><strong>Adventurer's Guild</strong> (Increase passive income by 5% per level)</p>
           <p>Cost: <span id="guildCost">100</span> Gold</p>
           <button id="buyGuild" title="Upgrade Adventurer's Guild">Buy Adventurer's Guild</button>
           <p>Level: <span id="guildLevel">0</span></p>
         </div>
-        <!-- Mage Tower -->
         <div style="margin-top: 10px;">
           <p><strong>Mage Tower</strong> (Increase critical multiplier by 0.1 per level)</p>
           <p>Cost: <span id="mageTowerCost">150</span> Gold</p>
@@ -536,7 +547,7 @@
         <h2>Quests & Lore</h2>
         <p id="activeQuestText"></p>
         <ul id="questList"></ul>
-        <!-- Enhanced Branching Quest: now three choices -->
+        <!-- Enhanced Branching Quest -->
         <div id="branchingQuest" style="display:none;">
           <p>How will you deal with the captured enemy?</p>
           <button id="mercifulChoice">Spare Him (Gain XP)</button>
@@ -588,7 +599,7 @@
           </li>
         </ul>
       </div>
-      <!-- Achievement Section -->
+      <!-- Achievement Section (Improvement 19 – Achievement rewards) -->
       <div class="section" id="achievementSection">
         <h2>Achievements</h2>
         <p>Track your milestones:</p>
@@ -608,21 +619,14 @@
         <button id="shareScoreButton" title="Share your high score">Share Score</button>
         <button id="communityChallengeButton" title="Join Community Challenge">Join Community Challenge</button>
       </div>
-      <!-- Mini-Game Section (Expanded Mini‑Games – Improvement 9) -->
+      <!-- Mini‑Game Section (Expanded Mini‑Games – Improvement 9) -->
       <div class="section" id="miniGameSection">
-        <h2>Mini-Game</h2>
+        <h2>Mini‑Game</h2>
         <p>Try the Archery Challenge or the new Potion Mixing Challenge for bonus rewards!</p>
         <button id="startArchery">Start Archery Challenge</button>
         <button id="startPotionMixing">Start Potion Mixing</button>
       </div>
-      <!-- Lore Section -->
-      <div class="section" id="loreSection">
-        <h2>Lore & World-Building</h2>
-        <div id="staticLore">
-          <p>Long ago in the Kingdom of Eldoria, mighty heroes and dastardly foes clashed for treasure and honor.</p>
-        </div>
-        <div id="dynamicLore"></div>
-      </div>
+      <!-- (The Lore & World‑Building section has been removed.) -->
     </div>
   </div>
 
@@ -648,8 +652,6 @@
       function currentGoldMultiplier() { return 1 + prestigeLevel * 0.1 + bonusMultiplier; }
       let highScore = 0;
       let enemyDefeatedCount = 0, specialAttackCount = 0;
-      // Dynamic Story Events (Improvement 1 already done)
-      let storyEventsTriggered = {};
       // Quests & Achievements
       const quests = [
         { id:1, desc: "Gather 100 Gold", lore: "The people of Eldoria hunger for wealth.", condition: () => gold >= 100, reward: () => { hero.xp += 10; }, completed: false },
@@ -662,15 +664,15 @@
         { id:8, desc: "Merciful or Ruthless?", lore: "A captured enemy begs for mercy. Your choice will shape your destiny.", condition: () => false, reward: () => {}, completed: false }
       ];
       const achievements = [
-        { id:1, desc: "First Click", condition: () => gold > 0, awarded: false },
-        { id:2, desc: "Gold Hoarder (1,000 total earned)", condition: () => gold >= 1000, awarded: false },
-        { id:3, desc: "Slayer (50 enemies defeated)", condition: () => enemyDefeatedCount >= 50, awarded: false },
-        { id:4, desc: "Prestige Master (Prestige Level 5)", condition: () => prestigeLevel >= 5, awarded: false },
-        { id:5, desc: "Quest Conqueror (Complete 5 quests)", condition: () => quests.filter(q => q.completed).length >= 5, awarded: false },
-        { id:6, desc: "Herald's Blessing (Click a Royal Herald)", condition: () => clickedRoyalHerald, awarded: false }
+        { id:1, desc: "First Click", condition: () => gold > 0, awarded: false, rewardApplied: false, rewardEffect: () => { baseGoldPerClickBonus += 1; showNotification("Achievement reward: Gold per click increased!", 2000); } },
+        { id:2, desc: "Gold Hoarder (1,000 total earned)", condition: () => gold >= 1000, awarded: false, rewardApplied: false, rewardEffect: () => { /* Increase passive income */ resourceBoost *= 1.1; showNotification("Achievement reward: Passive income increased!", 2000); } },
+        { id:3, desc: "Slayer (50 enemies defeated)", condition: () => enemyDefeatedCount >= 50, awarded: false, rewardApplied: false, rewardEffect: () => { hero.attack += 1; showNotification("Achievement reward: Hero attack increased!", 2000); } },
+        { id:4, desc: "Prestige Master (Prestige Level 5)", condition: () => prestigeLevel >= 5, awarded: false, rewardApplied: false, rewardEffect: () => { bonusMultiplier += 0.1; showNotification("Achievement reward: Bonus gold multiplier increased!", 2000); } },
+        { id:5, desc: "Quest Conqueror (Complete 5 quests)", condition: () => quests.filter(q => q.completed).length >= 5, awarded: false, rewardApplied: false, rewardEffect: () => { hero.xpNeeded = Math.floor(hero.xpNeeded * 0.95); showNotification("Achievement reward: XP requirement reduced!", 2000); } },
+        { id:6, desc: "Herald's Blessing (Click a Royal Herald)", condition: () => clickedRoyalHerald, awarded: false, rewardApplied: false, rewardEffect: () => { relics += 1; showNotification("Achievement reward: Extra relic granted!", 2000); } }
       ];
       let clickedRoyalHerald = false;
-      // Skill tree with prerequisites (Improvement 3 already integrated)
+      // Skill tree with prerequisites
       const skills = {
         combat1: { purchased: false, cost: 100, effect: () => { hero.attack += 2; } },
         combat2: { purchased: false, cost: 150, prerequisite: "combat1", effect: () => { comboMultiplier += 0.2; } },
@@ -703,8 +705,13 @@
       let communityChallengeActive = false;
       
       // -------------------------
-      // DOM ELEMENTS
+      // Dynamic Difficulty Scaling (Improvement 11)
+      function getDynamicDifficulty() {
+        return 1 + enemyDefeatedCount / 200;
+      }
+      
       // -------------------------
+      // DOM ELEMENTS
       const goldDisplay = document.getElementById("goldDisplay"),
             goldPerClickDisplay = document.getElementById("goldPerClickDisplay"),
             clickButton = document.getElementById("clickButton"),
@@ -876,10 +883,9 @@
       }
       
       // -------------------------
-      // DYNAMIC STORY EVENTS (Already integrated in checkLevelUp)
-      function triggerStoryEvent(eventText) {
-        appendLore(eventText);
-        showNotification(eventText, 4000);
+      // Dynamic Difficulty Scaling (Improvement 11)
+      function getDynamicDifficulty() {
+        return 1 + enemyDefeatedCount / 200;
       }
       
       // -------------------------
@@ -975,9 +981,7 @@
         branchingQuestDiv.style.display = branchQuest ? "block" : "none";
       }
       function appendLore(text) {
-        const p = document.createElement("p");
-        p.textContent = text;
-        dynamicLoreContainer.appendChild(p);
+        // Lore is now recorded only in the Journal
         const jp = document.createElement("p");
         jp.textContent = text;
         journalEntriesDiv.appendChild(jp);
@@ -994,7 +998,7 @@
       }
       
       // -------------------------
-      // ACHIEVEMENT FUNCTIONS
+      // ACHIEVEMENT FUNCTIONS (Improvement 19)
       function updateAchievementDisplay() {
         achievementListElem.innerHTML = "";
         achievements.forEach(a => {
@@ -1007,13 +1011,18 @@
         achievements.forEach(a => {
           if(!a.awarded && a.condition()) {
             a.awarded = true;
+            // Apply reward effect if not already applied
+            if(!a.rewardApplied && typeof a.rewardEffect === "function") {
+              a.rewardEffect();
+              a.rewardApplied = true;
+            }
             showNotification("Achievement unlocked: " + a.desc, 2500);
           }
         });
       }
       
       // -------------------------
-      // SKILL TREE FUNCTIONS (Advanced Skill Tree – Improvement 3)
+      // SKILL TREE FUNCTIONS (Prerequisite based)
       let skillOrder = Object.keys(skills);
       function updateSkillTree() {
         const lis = document.querySelectorAll("#skillList li");
@@ -1034,7 +1043,7 @@
           const skill = skills[id];
           const li = document.createElement("li");
           li.setAttribute("data-id", id);
-          let displayName = skill.name ? skill.name : ("Skill " + (index + 1));
+          let displayName = id; // Use the id as name (or add a custom name property if desired)
           li.innerHTML = displayName + " – Cost: " + skill.cost + " Gold " +
                          "<button class='buySkillBtn' title='Buy " + displayName + "'>Buy</button>";
           if(skill.prerequisite && !skills[skill.prerequisite].purchased) {
@@ -1141,10 +1150,8 @@
       closeArcheryButton.addEventListener("click", function() {
         archeryModal.style.display = "none";
       });
-      // New Potion Mixing Mini-Game (Improvement 9)
       startPotionMixingButton.addEventListener("click", function() {
         potionModal.style.display = "block";
-        // Reset any previous state if needed.
         selectedIngredients = [];
       });
       closePotionButton.addEventListener("click", function() {
@@ -1156,7 +1163,6 @@
         btn.addEventListener("click", function() {
           let ingredient = btn.getAttribute("data-ingredient");
           selectedIngredients.push(ingredient);
-          // Check if three ingredients have been selected.
           if(selectedIngredients.length === 3) {
             let correctSequence = ["Herb", "Mushroom", "Crystal"];
             if(JSON.stringify(selectedIngredients) === JSON.stringify(correctSequence)) {
@@ -1166,7 +1172,7 @@
               hero.xp += bonusXP;
               showNotification("Potion mixed perfectly! +" + bonusGold + " Gold and +" + bonusXP + " XP!");
             } else {
-              showNotification("Potion mixing failed! The ingredients were not in the correct order.", 2500);
+              showNotification("Potion mixing failed! Incorrect order.", 2500);
             }
             selectedIngredients = [];
             potionModal.style.display = "none";
@@ -1174,7 +1180,6 @@
           }
         });
       });
-      
       // Enhanced Branching Quest (Improvement 8)
       document.getElementById("mercifulChoice").addEventListener("click", function() {
         let bonusXP = 100;
@@ -1205,53 +1210,53 @@
         branchingQuestDiv.style.display = "none";
         updateDisplays();
       });
-      
       // -------------------------
-      // ENEMY SPAWNING (Enhanced Enemy Variety and AI – Improvement 4)
+      // ENEMY SPAWNING (Now with Dynamic Difficulty Scaling & new Shielded type – Improvement 11 & 4)
       function spawnEnemy() {
         enemy.level = hero.level;
         let r = Math.random();
+        let dynDiff = getDynamicDifficulty();
         if(r < 0.15) {
           enemy.type = "Poisonous";
-          enemy.maxHP = Math.floor((20 + enemy.level * 10) * difficultyMultiplier);
-          enemy.rewardGold = Math.floor((5 + enemy.level * 2) * 1.5);
-          enemy.rewardXP = Math.floor((10 + enemy.level * 3) * 1.5);
+          enemy.maxHP = Math.floor((20 + enemy.level * 10) * difficultyMultiplier * dynDiff);
+          enemy.rewardGold = Math.floor((5 + enemy.level * 2) * 1.5 * dynDiff);
+          enemy.rewardXP = Math.floor((10 + enemy.level * 3) * 1.5 * dynDiff);
           enemy.poison = true;
           enemy.poisonDamage = enemy.level * 2;
           enemy.poisonDuration = 3;
           documentHeaderEnemyType.textContent = "(Poisonous)";
         } else if(r < 0.20) {
           enemy.type = "Boss";
-          enemy.maxHP = ((20 + enemy.level * 10) * 3) * difficultyMultiplier * (challengeMode ? 1.2 : 1);
-          enemy.rewardGold = ((5 + enemy.level * 2) * 3);
-          enemy.rewardXP = ((10 + enemy.level * 3) * 3);
+          enemy.maxHP = Math.floor(((20 + enemy.level * 10) * 3) * difficultyMultiplier * (challengeMode ? 1.2 : 1) * dynDiff);
+          enemy.rewardGold = Math.floor(((5 + enemy.level * 2) * 3) * dynDiff);
+          enemy.rewardXP = Math.floor(((10 + enemy.level * 3) * 3) * dynDiff);
           enemy.dodgeChance = 0;
           enemy.counterDamage = enemy.level * 3;
           enemy.regen = 0;
           documentHeaderEnemyType.textContent = "(Boss)";
         } else if(r < 0.30) {
           enemy.type = "Armored";
-          enemy.maxHP = Math.floor((20 + enemy.level * 10) * 1.5 * difficultyMultiplier);
-          enemy.rewardGold = Math.floor((5 + enemy.level * 2) * 1.2);
-          enemy.rewardXP = Math.floor((10 + enemy.level * 3) * 0.8);
+          enemy.maxHP = Math.floor((20 + enemy.level * 10) * 1.5 * difficultyMultiplier * dynDiff);
+          enemy.rewardGold = Math.floor((5 + enemy.level * 2) * 1.2 * dynDiff);
+          enemy.rewardXP = Math.floor((10 + enemy.level * 3) * 0.8 * dynDiff);
           enemy.dodgeChance = 0;
           enemy.counterDamage = enemy.level * 2;
           enemy.regen = 0;
           documentHeaderEnemyType.textContent = "(Armored)";
         } else if(r < 0.40) {
           enemy.type = "Agile";
-          enemy.maxHP = (20 + enemy.level * 10) * difficultyMultiplier;
-          enemy.rewardGold = 5 + enemy.level * 2;
-          enemy.rewardXP = 10 + enemy.level * 3;
+          enemy.maxHP = Math.floor((20 + enemy.level * 10) * difficultyMultiplier * dynDiff);
+          enemy.rewardGold = Math.floor(5 + enemy.level * 2 * dynDiff);
+          enemy.rewardXP = Math.floor(10 + enemy.level * 3 * dynDiff);
           enemy.dodgeChance = 0.3;
           enemy.counterDamage = enemy.level * 2;
           enemy.regen = 0;
           documentHeaderEnemyType.textContent = "(Agile)";
         } else if(r < 0.45) {
-          enemy.type = "Shielded"; // New enemy type: Shielded
-          enemy.maxHP = Math.floor((20 + enemy.level * 10) * difficultyMultiplier);
-          enemy.rewardGold = 5 + enemy.level * 2;
-          enemy.rewardXP = 10 + enemy.level * 3;
+          enemy.type = "Shielded";
+          enemy.maxHP = Math.floor((20 + enemy.level * 10) * difficultyMultiplier * dynDiff);
+          enemy.rewardGold = Math.floor(5 + enemy.level * 2 * dynDiff);
+          enemy.rewardXP = Math.floor(10 + enemy.level * 3 * dynDiff);
           enemy.dodgeChance = 0;
           enemy.counterDamage = enemy.level * 2;
           enemy.regen = 0;
@@ -1259,18 +1264,18 @@
           documentHeaderEnemyType.textContent = "(Shielded)";
         } else if(r < 0.55) {
           enemy.type = "Regenerator";
-          enemy.maxHP = Math.floor((20 + enemy.level * 10) * 1.2 * difficultyMultiplier);
-          enemy.rewardGold = Math.floor((5 + enemy.level * 2) * 1.1);
-          enemy.rewardXP = Math.floor((10 + enemy.level * 3) * 1.1);
+          enemy.maxHP = Math.floor((20 + enemy.level * 10) * 1.2 * difficultyMultiplier * dynDiff);
+          enemy.rewardGold = Math.floor((5 + enemy.level * 2) * 1.1 * dynDiff);
+          enemy.rewardXP = Math.floor((10 + enemy.level * 3) * 1.1 * dynDiff);
           enemy.dodgeChance = 0;
           enemy.counterDamage = enemy.level * 2;
           enemy.regen = Math.floor(enemy.maxHP * 0.02);
           documentHeaderEnemyType.textContent = "(Regenerator)";
         } else {
           enemy.type = "Normal";
-          enemy.maxHP = (20 + enemy.level * 10) * difficultyMultiplier;
-          enemy.rewardGold = 5 + enemy.level * 2;
-          enemy.rewardXP = 10 + enemy.level * 3;
+          enemy.maxHP = Math.floor((20 + enemy.level * 10) * difficultyMultiplier * dynDiff);
+          enemy.rewardGold = Math.floor(5 + enemy.level * 2 * dynDiff);
+          enemy.rewardXP = Math.floor(10 + enemy.level * 3 * dynDiff);
           enemy.dodgeChance = 0;
           enemy.counterDamage = enemy.level * 2;
           enemy.regen = 0;
@@ -1299,7 +1304,6 @@
           } else if(heroSpecialization === "Mage") {
             critMultiplier += 0.1;
           }
-          // Dynamic Story Events are triggered in checkLevelUp (see earlier)
           updateDisplays();
           if(hero.level >= 10) prestigeButton.disabled = false;
         }
@@ -1537,11 +1541,10 @@
           }
           lastAttackTime = currentTime;
           let damage = hero.attack * comboMultiplier;
-          // Improvement 4: if enemy is Shielded, reduce damage
           if(enemy.type === "Shielded") {
             let originalDamage = damage;
             damage = Math.floor(damage * (1 - enemy.shieldReduction));
-            showNotification("Enemy's shield absorbed " + (originalDamage - damage) + " damage!");
+            showNotification("Enemy shield absorbed " + (originalDamage - damage) + " damage!");
           }
           if(enemy.type === "Agile" && Math.random() < enemy.dodgeChance) {
             showNotification("Enemy dodged your attack!");
@@ -1553,9 +1556,7 @@
               showNotification("Combo x" + comboMultiplier.toFixed(1) + " for " + Math.floor(damage) + " damage!");
             }
           }
-          if(enemy.type === "Poisonous") {
-            applyPoisonEffect();
-          }
+          if(enemy.type === "Poisonous") { applyPoisonEffect(); }
           if(Math.random() < 0.3) { triggerQTE(); }
           if(enemy.currentHP > 0 && Math.random() < 0.2) {
             let counterDmg = enemy.counterDamage;
@@ -1576,6 +1577,9 @@
             gold += enemy.rewardGold * currentGoldMultiplier() * temporaryGoldBonus;
             hero.xp += enemy.rewardXP;
             showNotification("Enemy defeated! Gained " + Math.floor(enemy.rewardGold * currentGoldMultiplier() * temporaryGoldBonus) + " Gold and " + enemy.rewardXP + " XP!");
+            // Enhanced UI Animation: Shake the battle section on enemy defeat (Improvement 14)
+            document.getElementById("battleSection").classList.add("shake");
+            setTimeout(() => { document.getElementById("battleSection").classList.remove("shake"); }, 500);
             spawnEnemy();
             checkLevelUp();
           }
@@ -1658,7 +1662,6 @@
           leaderboardListElem.appendChild(li);
         });
       }
-      
       // -------------------------
       // END OF EVENT LISTENERS
     })();
